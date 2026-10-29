@@ -2,7 +2,7 @@
 
 **Course:** 25CS34I — System & Network Administration (Semester 3, S.E.T Polytechnic)
 **Tech Stack:** React 19 + TypeScript + Vite + Tailwind CSS v4 + PWA + Capacitor
-**Deployment:** Netlify (SPA) + PWA + Offline-first
+**Deployment:** Netlify (SPA) + PWA + Offline-first — see [Deploying to Netlify](#deploying-to-netlify)
 
 ---
 
@@ -82,10 +82,10 @@ To make this a real multi-user portal you need an actual backend (see *Future Wo
 - Mobile keyboard: visualViewport tracking in terminal
 
 ### Task 4 — Netlify Deployment
-- netlify.toml: SPA redirect, 1-year asset caching, CSP/HSTS/security headers, PWA manifest/worker headers
-- public/_redirects: client-side routing
-- Build: `npm run build` → /dist for Netlify
-- Service worker is generated at build time by `vite-plugin-pwa` (Workbox), not checked in as `public/sw.js`
+- `netlify.toml`: Node 22, `npm run build` → `dist`, SPA fallback, cache rules, security headers including a CSP that allows the Google sign-in script/iframe
+- `public/_redirects`: same SPA fallback for drag-and-drop deploys of `dist/`
+- Build: `npm run build` → `dist/`; the service worker is generated at build time by `vite-plugin-pwa` (Workbox), not checked in as `public/sw.js`
+- See [Deploying to Netlify](#deploying-to-netlify) for the one-time setup and the two environment variables.
 
 ### Task 5 — Guided Lab Mode
 - Component: GuidedLab (step navigation, scenario dropdown)
@@ -121,6 +121,57 @@ Home shows a resume card from `lastLesson`.
 
 The reasoning behind these choices — including what was cut and why — is in
 [`WORKFLOW.md`](WORKFLOW.md).
+
+---
+
+## Deploying to Netlify
+
+The repo is configured for a Git deploy: `netlify.toml` holds the build command, Node version,
+SPA fallback, cache rules and security headers, so the Netlify UI only needs the repository
+connected.
+
+### One-time setup
+
+1. **Import the repo** — Netlify → Add new site → Import an existing project →
+   `Dilipkumarkv/SNA-Portal`. Leave build command and publish directory empty; `netlify.toml`
+   supplies `npm run build` and `dist`.
+2. **Set the environment variables** (Site configuration → Environment variables, scope *Builds*):
+
+   | Variable | Required | Effect |
+   |---|---|---|
+   | `VITE_GOOGLE_CLIENT_ID` | for admin sign-in | Without it the admin sign-in button is not rendered; the student portal is unaffected |
+   | `VITE_ADMIN_EMAILS` | no | Comma-separated allowlist. Empty means any Google account that signs in is treated as admin |
+
+   Both are build-time values baked into the bundle. They are public by design — never put a
+   client secret or a service key in a `VITE_*` variable.
+3. **Allow the site in Google Cloud** — APIs & Services → Credentials → the OAuth 2.0 client →
+   Authorized JavaScript origins → add `https://<your-site>.netlify.app` (and the custom domain,
+   if any). Sign-in fails with an origin error until this is done. Deploy previews have their own
+   origins; add them individually if admin sign-in is needed on previews.
+
+### Deploying
+
+- **Git** — every push to `main` builds and publishes; pull requests get deploy previews.
+- **CLI** — `npx netlify-cli deploy --build --prod` for a one-off publish from this machine
+  (uses the same `netlify.toml`; requires `npx netlify-cli login` and `link` once).
+- **Drag and drop** — drop the contents of `dist/` on the Netlify dashboard. `_redirects` travels
+  with the build so routing still works, but the header rules in `netlify.toml` do not apply to
+  drag-and-drop deploys.
+
+### What the deploy gives you
+
+- SPA routing: any unknown path returns `index.html` (200), so `#learn/3/1` and friends work.
+- Cache policy: hashed `/assets/*` and `/workbox-*.js` for a year, `/schematics/*` for a week,
+  `index.html` revalidated, `sw.js` and the manifest never cached — so a deploy reaches installed
+  PWAs on the next visit.
+- Security: `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, HSTS, a `Permissions-Policy`
+  and a CSP that pins scripts to this origin plus `accounts.google.com`. Anything new loaded from
+  a third-party origin must be added to the CSP in `netlify.toml` or it will be blocked in
+  production while working in `npm run dev`.
+- No third-party asset requests: Inter is self-hosted as two variable-font subsets in
+  `src/assets/fonts/` (declared with `@font-face` in `src/index.css`), and the PWA icons are
+  generated from `public/icon.svg`. Both are hashed into `/assets/` and precached by the service
+  worker, so the portal renders correctly under the CSP and offline.
 
 ---
 
@@ -160,7 +211,7 @@ The plan for turning this content into a learning app (modelled on learn-esp32) 
 6. Schematic data: src/data/schematics.ts (`imageUrl` photograph or `svgPath` + hotspots); new photographs go in `public/schematics/` and must be added to the Workbox `globPatterns` in vite.config.ts if the format changes
 7. File attachments: src/lib/fileStore.ts (IndexedDB). Never store large files in localStorage
 8. New tab: Add import to App.tsx + add to BottomNav + add the id to src/types.ts
-9. Build: `npm run build`; Netlify deploy: `netlify deploy --prod --dir=dist`
+9. Build: `npm run build`; deploy via Git push or `npx netlify-cli deploy --build --prod` (see [Deploying to Netlify](#deploying-to-netlify))
 
 ---
 

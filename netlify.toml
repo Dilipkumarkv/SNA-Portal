@@ -3,31 +3,39 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
   NPM_FLAGS = "--legacy-peer-deps"
 
-# Single Page App redirect fallback
+# Single Page App fallback: every unknown path renders index.html.
+# Existing files (webp, png, sw.js) are still served before this rewrite runs.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Cache static hashed assets for 1 year
+# Hashed build output (index-*.js, index-*.css, workbox-*.js) never changes
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Security headers
 [[headers]]
-  for = "/*"
+  for = "/workbox-*.js"
   [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    Cache-Control = "public, max-age=31536000, immutable"
 
-# Do not cache Service Worker and Web Manifest so updates take effect immediately
+# Stable filenames: cache for a week, then revalidate
+[[headers]]
+  for = "/schematics/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# The app shell must revalidate so a deploy is picked up
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [[headers]]
   for = "/sw.js"
   [headers.values]
@@ -42,3 +50,16 @@
   for = "/registerSW.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Security headers.
+# The Google origins are required by @react-oauth/google: the GSI client script,
+# its sign-in iframe, and profile pictures come from outside this origin.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.googleusercontent.com https://www.gstatic.com; font-src 'self' data:; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
