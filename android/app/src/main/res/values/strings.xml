@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LearningApp</string>
+    <string name="title_activity_main">LearningApp</string>
+    <string name="package_name">com.learning.app</string>
+    <string name="custom_url_scheme">com.learning.app</string>
+</resources>
