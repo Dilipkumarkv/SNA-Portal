@@ -61,5 +61,11 @@ export const MACHINE_VIEW_IDS = ['back', 'front', 'cables', 'board', 'parts'] as
 
 export type MachineViewId = (typeof MACHINE_VIEW_IDS)[number];
 
+export const LAB_IDS = ['rufus', 'partition', 'windows', 'ubuntu', 'diskpart', 'restore', 'startup'] as const;
+
+export type LabId = (typeof LAB_IDS)[number];
+
+export type LabWeek = 5 | 6 | 7;
+
 /** plan, drills and viva are parked while the guide is validated; keep them typed for the archived screens. */
-export type ExamTab = 'machine' | 'day' | 'project' | 'terminal' | 'plan' | 'drills' | 'viva';
+export type ExamTab = 'machine' | 'day' | 'labs' | 'project' | 'terminal' | 'plan' | 'drills' | 'viva';

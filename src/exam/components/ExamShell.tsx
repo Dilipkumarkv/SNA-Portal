@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Clock3, FolderKanban, Monitor, SquareTerminal, CloudOff } from 'lucide-react';
+import { BookOpen, Clock3, FolderKanban, Monitor, SquareTerminal, CloudOff } from 'lucide-react';
 import { ThemeToggle } from '../../context/ThemeContext';
 import type { ExamTab } from '../types';
 
 const NAV: { id: ExamTab; label: string; icon: typeof Monitor }[] = [
   { id: 'machine', label: 'Machine', icon: Monitor },
   { id: 'day', label: 'Exam day', icon: Clock3 },
+  { id: 'labs', label: 'Labs', icon: BookOpen },
   { id: 'terminal', label: 'Terminal', icon: SquareTerminal },
   { id: 'project', label: 'CIE-5', icon: FolderKanban },
 ];
@@ -145,7 +146,7 @@ export function ExamShell({
         className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface lg:hidden"
         aria-label="Exam sections"
       >
-        <div className="mx-auto grid h-[4.25rem] w-full max-w-lg grid-cols-4 px-1">
+        <div className="mx-auto grid h-[4.25rem] w-full max-w-lg grid-cols-5 px-1">
           {NAV.map((item) => {
             const active = tab === item.id;
             const Icon = item.icon;
