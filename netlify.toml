@@ -30,6 +30,11 @@
   [headers.values]
     Cache-Control = "public, max-age=604800"
 
+[[headers]]
+  for = "/guide/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
 # The app shell must revalidate so a deploy is picked up
 [[headers]]
   for = "/index.html"
