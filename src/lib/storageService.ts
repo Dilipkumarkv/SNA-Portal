@@ -1,51 +1,22 @@
 import { deleteFile, migrateDataUrl } from './fileStore';
+import {
+  isAnnouncement,
+  isCieItem,
+  isDynamicLab,
+  isDynamicNote,
+  isFeedbackItem,
+  migrateCollection,
+  readCollection,
+  readRawItems,
+  writeCollection,
+  type Announcement,
+  type CieItem,
+  type DynamicLab,
+  type DynamicNote,
+  type FeedbackItem,
+} from './storageSchema';
 
-export interface Announcement {
-  id: string;
-  title: string;
-  message: string;
-  urgent: boolean;
-  createdAt: string;
-}
-
-export interface CieItem {
-  id: string;
-  label: string;
-  badge: string;
-  pct: number | string;
-  col: 'indigo' | 'slate' | 'amber';
-  createdAt: string;
-}
-
-export interface DynamicNote {
-  id: string;
-  week: number;
-  title: string;
-  fileId?: string;
-  custom?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface DynamicLab {
-  _docId: string;
-  id: number;
-  week: number;
-  title: string;
-  desc: string;
-  steps: string[];
-  links: string[];
-  fileId?: string;
-  createdAt: string;
-}
-
-export interface FeedbackItem {
-  id: string;
-  type: 'comment' | 'issue';
-  message: string;
-  status: 'new' | 'reviewed';
-  createdAt: string;
-}
+export type { Announcement, CieItem, DynamicLab, DynamicNote, FeedbackItem };
 
 // Local Storage Keys
 const KEYS = {
@@ -63,11 +34,22 @@ const dispatchUpdate = (key: string) => {
   }
 };
 
-// Initialize default seed data if first time running
+// Date.now() alone collides when two items are added in the same millisecond,
+// which makes deleting one remove both.
+const makeId = (prefix: string) =>
+  `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+// Initialize default seed data if first time running, and bring any legacy
+// plain-array payloads into the versioned envelope.
 export async function initStorage() {
   if (typeof window === 'undefined') return;
 
-  // Initialize Default Announcements
+  migrateCollection(KEYS.ANNOUNCEMENTS, isAnnouncement);
+  migrateCollection(KEYS.CIE_SCHEDULE, isCieItem);
+  migrateCollection(KEYS.NOTES, isDynamicNote);
+  migrateCollection(KEYS.LABS, isDynamicLab);
+  migrateCollection(KEYS.FEEDBACK, isFeedbackItem);
+
   if (!localStorage.getItem(KEYS.ANNOUNCEMENTS)) {
     const defaultAnnouncements: Announcement[] = [
       {
@@ -78,10 +60,9 @@ export async function initStorage() {
         createdAt: new Date().toISOString(),
       }
     ];
-    localStorage.setItem(KEYS.ANNOUNCEMENTS, JSON.stringify(defaultAnnouncements));
+    writeCollection(KEYS.ANNOUNCEMENTS, defaultAnnouncements);
   }
 
-  // Initialize Default CIE Schedule
   if (!localStorage.getItem(KEYS.CIE_SCHEDULE)) {
     const defaultCie: CieItem[] = [
       { id: 'cie_1', label: 'CIE-1: Theory (Wk 1-4)', badge: 'Wk 4 | 50M', pct: '100', col: 'indigo', createdAt: new Date().toISOString() },
@@ -90,7 +71,7 @@ export async function initStorage() {
       { id: 'cie_4', label: 'CIE-4: Practice (Wk 11-13)', badge: 'Wk 13 | 50M', pct: '0', col: 'slate', createdAt: new Date().toISOString() },
       { id: 'cie_5', label: 'CIE-5: Portfolio + Project', badge: 'Wk 1-13 | 50M', pct: '45', col: 'amber', createdAt: new Date().toISOString() },
     ];
-    localStorage.setItem(KEYS.CIE_SCHEDULE, JSON.stringify(defaultCie));
+    writeCollection(KEYS.CIE_SCHEDULE, defaultCie);
   }
   await migrateLegacyAttachments();
 }
@@ -111,67 +92,56 @@ async function migrateLegacyAttachments() {
   const legacyKey = 'sna_legacy_files_migrated';
   if (localStorage.getItem(legacyKey)) return;
 
-  const migrate = async (storageKey: string) => {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return;
-
-    let items: any[];
-    try {
-      items = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    if (!Array.isArray(items)) return;
+  const migrate = async <T,>(storageKey: string, isValid: (value: unknown) => value is T) => {
+    const items = readRawItems(storageKey);
+    if (items.length === 0) return;
 
     let changed = false;
     for (const item of items) {
-      const value = item?.fileUrl;
+      if (typeof item !== 'object' || item === null) continue;
+      const record = item as Record<string, unknown>;
+      const value = record.fileUrl;
       if (typeof value === 'string' && value.startsWith('data:')) {
         const fileId = await migrateDataUrl(value);
         if (fileId) {
-          item.fileId = fileId;
-          delete item.fileUrl;
+          record.fileId = fileId;
+          delete record.fileUrl;
           changed = true;
         }
       }
     }
 
-    if (changed) localStorage.setItem(storageKey, JSON.stringify(items));
+    if (changed) writeCollection(storageKey, items.filter(isValid));
   };
 
-  await migrate(KEYS.NOTES);
-  await migrate(KEYS.LABS);
+  await migrate(KEYS.NOTES, isDynamicNote);
+  await migrate(KEYS.LABS, isDynamicLab);
   localStorage.setItem(legacyKey, '1');
 }
 
 // ----------------- Announcements -----------------
 export function getAnnouncements(): Announcement[] {
-  try {
-    const raw = localStorage.getItem(KEYS.ANNOUNCEMENTS);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return readCollection(KEYS.ANNOUNCEMENTS, isAnnouncement);
 }
 
 export function addAnnouncement(data: { title: string; message: string; urgent?: boolean }): Announcement {
   const items = getAnnouncements();
   const newItem: Announcement = {
-    id: `ann_${Date.now()}`,
+    id: makeId('ann'),
     title: data.title.trim(),
     message: data.message.trim(),
     urgent: !!data.urgent,
     createdAt: new Date().toISOString(),
   };
   items.unshift(newItem);
-  localStorage.setItem(KEYS.ANNOUNCEMENTS, JSON.stringify(items));
+  writeCollection(KEYS.ANNOUNCEMENTS, items);
   dispatchUpdate(KEYS.ANNOUNCEMENTS);
   return newItem;
 }
 
 export function deleteAnnouncement(id: string): void {
   const items = getAnnouncements().filter(i => i.id !== id);
-  localStorage.setItem(KEYS.ANNOUNCEMENTS, JSON.stringify(items));
+  writeCollection(KEYS.ANNOUNCEMENTS, items);
   dispatchUpdate(KEYS.ANNOUNCEMENTS);
 }
 
@@ -190,18 +160,13 @@ export function subscribeAnnouncements(callback: (items: Announcement[]) => void
 
 // ----------------- CIE Schedule -----------------
 export function getCieSchedule(): CieItem[] {
-  try {
-    const raw = localStorage.getItem(KEYS.CIE_SCHEDULE);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return readCollection(KEYS.CIE_SCHEDULE, isCieItem);
 }
 
 export function addCieItem(data: { label: string; badge: string; pct: number | string; col: 'indigo' | 'slate' | 'amber' }): CieItem {
   const items = getCieSchedule();
   const newItem: CieItem = {
-    id: `cie_${Date.now()}`,
+    id: makeId('cie'),
     label: data.label.trim(),
     badge: data.badge.trim(),
     pct: data.pct,
@@ -209,14 +174,14 @@ export function addCieItem(data: { label: string; badge: string; pct: number | s
     createdAt: new Date().toISOString(),
   };
   items.push(newItem);
-  localStorage.setItem(KEYS.CIE_SCHEDULE, JSON.stringify(items));
+  writeCollection(KEYS.CIE_SCHEDULE, items);
   dispatchUpdate(KEYS.CIE_SCHEDULE);
   return newItem;
 }
 
 export function deleteCieItem(id: string): void {
   const items = getCieSchedule().filter(i => i.id !== id);
-  localStorage.setItem(KEYS.CIE_SCHEDULE, JSON.stringify(items));
+  writeCollection(KEYS.CIE_SCHEDULE, items);
   dispatchUpdate(KEYS.CIE_SCHEDULE);
 }
 
@@ -235,18 +200,13 @@ export function subscribeCieSchedule(callback: (items: CieItem[]) => void): () =
 
 // ----------------- Dynamic Notes -----------------
 export function getDynamicNotes(): DynamicNote[] {
-  try {
-    const raw = localStorage.getItem(KEYS.NOTES);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return readCollection(KEYS.NOTES, isDynamicNote);
 }
 
 export function addDynamicNote(data: { week: number; title: string; fileId?: string; custom?: string }): DynamicNote {
   const items = getDynamicNotes();
   const newItem: DynamicNote = {
-    id: `note_${Date.now()}`,
+    id: makeId('note'),
     week: data.week,
     title: data.title,
     fileId: data.fileId,
@@ -255,7 +215,7 @@ export function addDynamicNote(data: { week: number; title: string; fileId?: str
     updatedAt: new Date().toISOString(),
   };
   items.push(newItem);
-  localStorage.setItem(KEYS.NOTES, JSON.stringify(items));
+  writeCollection(KEYS.NOTES, items);
   dispatchUpdate(KEYS.NOTES);
   return newItem;
 }
@@ -264,7 +224,7 @@ export function deleteDynamicNote(id: string): void {
   const target = getDynamicNotes().find(i => i.id === id);
   if (target?.fileId) deleteFile(target.fileId);
   const items = getDynamicNotes().filter(i => i.id !== id);
-  localStorage.setItem(KEYS.NOTES, JSON.stringify(items));
+  writeCollection(KEYS.NOTES, items);
   dispatchUpdate(KEYS.NOTES);
 }
 
@@ -283,12 +243,7 @@ export function subscribeNotes(callback: (items: DynamicNote[]) => void): () => 
 
 // ----------------- Dynamic Labs -----------------
 export function getDynamicLabs(): DynamicLab[] {
-  try {
-    const raw = localStorage.getItem(KEYS.LABS);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return readCollection(KEYS.LABS, isDynamicLab);
 }
 
 export function addDynamicLab(data: {
@@ -301,7 +256,7 @@ export function addDynamicLab(data: {
 }): DynamicLab {
   const items = getDynamicLabs();
   const newItem: DynamicLab = {
-    _docId: `lab_${Date.now()}`,
+    _docId: makeId('lab'),
     id: data.week,
     week: data.week,
     title: data.title,
@@ -312,7 +267,7 @@ export function addDynamicLab(data: {
     createdAt: new Date().toISOString(),
   };
   items.push(newItem);
-  localStorage.setItem(KEYS.LABS, JSON.stringify(items));
+  writeCollection(KEYS.LABS, items);
   dispatchUpdate(KEYS.LABS);
   return newItem;
 }
@@ -321,7 +276,7 @@ export function deleteDynamicLab(docId: string): void {
   const target = getDynamicLabs().find(i => i._docId === docId);
   if (target?.fileId) deleteFile(target.fileId);
   const items = getDynamicLabs().filter(i => i._docId !== docId);
-  localStorage.setItem(KEYS.LABS, JSON.stringify(items));
+  writeCollection(KEYS.LABS, items);
   dispatchUpdate(KEYS.LABS);
 }
 
@@ -340,25 +295,19 @@ export function subscribeLabs(callback: (items: DynamicLab[]) => void): () => vo
 
 // ----------------- Feedback -----------------
 export function addFeedback(data: { type: 'comment' | 'issue'; message: string }): FeedbackItem {
-  const raw = localStorage.getItem(KEYS.FEEDBACK);
-  const items: FeedbackItem[] = raw ? JSON.parse(raw) : [];
+  const items = getFeedbacks();
   const newItem: FeedbackItem = {
-    id: `fb_${Date.now()}`,
+    id: makeId('fb'),
     type: data.type,
     message: data.message.trim(),
     status: 'new',
     createdAt: new Date().toISOString(),
   };
   items.unshift(newItem);
-  localStorage.setItem(KEYS.FEEDBACK, JSON.stringify(items));
+  writeCollection(KEYS.FEEDBACK, items);
   return newItem;
 }
 
 export function getFeedbacks(): FeedbackItem[] {
-  try {
-    const raw = localStorage.getItem(KEYS.FEEDBACK);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return readCollection(KEYS.FEEDBACK, isFeedbackItem);
 }

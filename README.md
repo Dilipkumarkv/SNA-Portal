@@ -32,12 +32,16 @@ npm run dev
 # Server: http://localhost:3000/
 ```
 
-Type check and production build:
+Type check, test and production build:
 
 ```bash
 npm run lint     # tsc --noEmit
+npm test         # routing, progress and storage tests (node:test + tsx)
 npm run build    # -> dist/
 ```
+
+GitHub Actions runs all three on every push to `main` and on pull requests
+(`.github/workflows/ci.yml`).
 
 ---
 
@@ -53,10 +57,14 @@ Everything is stored on the device that created it:
 | Uploaded PDF attachments | **IndexedDB** (`sna_files`) | Keeps large files out of the 5 MB localStorage quota |
 | Terminal sessions, tracker progress, theme | `localStorage` | |
 
+Stored collections use a versioned `{ v: 2, items }` envelope. Older plain arrays are migrated
+on load, and rows that fail runtime validation are dropped instead of reaching the UI.
+
 **The admin panel is a local demo, not a shared server.** Google OAuth still gates who can
 open it, but the sign-in only gates the UI — the session lives in `localStorage` and the ID
 token is decoded but never verified server-side. Anyone who edits `localStorage` in devtools
 can bypass it. Data published in one browser is invisible to students on other devices.
+Production builds show a dismissible demo banner that says so on every screen.
 
 To make this a real multi-user portal you need an actual backend (see *Future Work* below).
 
@@ -229,8 +237,8 @@ The plan for turning this content into a learning app (modelled on learn-esp32) 
   photos taken in the lab
 - The model papers in Learn › Assessments are hand-transcribed; the source CIE PDFs are not bundled
 - Offline reload has not been verified with the network actually off
-- Bundle is ~1.5 MB (455 kB gzip) because the whole curriculum, jsPDF and html2canvas load
-  eagerly. Code-splitting the PDF export is the obvious fix
+- Bundle is ~886 kB (278 kB gzip). jsPDF and html2canvas are now lazy chunks (~590 kB total)
+  loaded on the first PDF export; the remaining size is curriculum data and the terminal engine
 
 ---
 

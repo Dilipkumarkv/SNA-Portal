@@ -10,24 +10,14 @@ import { TabTerminal } from './components/tabs/TabTerminal';
 import { TabLinks } from './components/tabs/TabLinks';
 import { TabAdmin } from './components/tabs/TabAdmin';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+import { DemoNotice } from './components/DemoNotice';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import type { TabId } from './types';
+import { tabFromHash } from './lib/routing';
 import { isAdminAuthenticated, subscribeAdminAuth, initAllowedAdminEmails } from './lib/googleAuth';
 
-const PRIMARY_TABS: TabId[] = ['home', 'learn', 'labs', 'terminal', 'links'];
-
-function tabFromHash(): TabId | 'admin' {
-  const hash = window.location.hash.replace('#', '');
-  if (hash === 'admin' || hash.startsWith('admin-')) return 'admin';
-  if (hash === 'learn' || hash.startsWith('learn/')) return 'learn';
-  if (PRIMARY_TABS.includes(hash as TabId)) return hash as TabId;
-  // #notes, #qps and #tracker predate this navigation; fold them into the app.
-  if (hash === 'notes' || hash === 'qps') return 'learn';
-  return 'home';
-}
-
 export default function App() {
-  const [activeTab, setActiveTabState] = useState<TabId | 'admin'>(() => tabFromHash());
+  const [activeTab, setActiveTabState] = useState<TabId | 'admin'>(() => tabFromHash(window.location.hash));
   const [isAdmin, setIsAdmin] = useState<boolean>(isAdminAuthenticated());
   const reduceMotion = useReducedMotion();
 
@@ -39,7 +29,7 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       try {
-        setActiveTabState(tabFromHash());
+        setActiveTabState(tabFromHash(window.location.hash));
       } catch {
         // Ignore hash restrictions in sandboxed iframes.
       }
@@ -92,6 +82,7 @@ export default function App() {
       />
       <Header activeTab={activeTab} />
       <main className="safe-x nav-offset mx-auto w-full max-w-5xl pt-[calc(3.5rem+env(safe-area-inset-top))]">
+        <DemoNotice />
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={activeTab}

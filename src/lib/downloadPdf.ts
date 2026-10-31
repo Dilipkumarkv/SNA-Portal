@@ -1,13 +1,17 @@
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { toast } from 'react-hot-toast';
 
 export const generateAndDownloadPdf = async (elementId: string, filename: string, successMessage: string) => {
   const element = document.getElementById(elementId);
   if (!element) return;
-  
+
   const toastId = toast.loading('Generating PDF...');
   try {
+    // jsPDF and html2canvas are ~500 kB together; load them only when someone exports.
+    const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+      import('jspdf'),
+      import('html2canvas'),
+    ]);
+
     const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
     const imgData = canvas.toDataURL('image/png');
     

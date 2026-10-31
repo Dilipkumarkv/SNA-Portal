@@ -146,7 +146,7 @@ export function TerminalScreen({
         </span>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes blink {
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
@@ -469,7 +469,7 @@ export function OfflineIndicator({}: OfflineIndicatorProps) {
           <Check size={14} /> Progress Saved
         </div>
       )}
-      <style jsx>{`
+      <style>{`
         @keyframes slide-in {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
