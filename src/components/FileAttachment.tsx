@@ -58,16 +58,16 @@ export function FileAttachment({ fileId, label = 'Download attachment', classNam
 
   if (missing) {
     return (
-      <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 ${className}`}>
-        <FileText size={12} /> Attachment unavailable
+      <span className={`inline-flex items-center gap-1.5 text-xs font-medium text-ink-3 ${className}`}>
+        <FileText size={13} /> Attachment unavailable
       </span>
     );
   }
 
   if (loading || !url) {
     return (
-      <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 ${className}`}>
-        <Loader2 size={12} className="animate-spin" /> Loading attachment
+      <span className={`inline-flex items-center gap-1.5 text-xs font-medium text-ink-3 ${className}`}>
+        <Loader2 size={13} className="animate-spin" /> Loading attachment
       </span>
     );
   }
@@ -78,11 +78,11 @@ export function FileAttachment({ fileId, label = 'Download attachment', classNam
       download={name || undefined}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors border border-emerald-100 dark:border-emerald-900/50 ${className}`}
+      className={`inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-control border border-line px-2.5 py-1.5 text-xs font-medium text-ink-2 transition-colors hover:border-line-strong hover:text-ink ${className}`}
       title={name ? `Open ${name}` : label}
     >
-      {name.toLowerCase().endsWith('.pdf') ? <FileText size={12} /> : <Download size={12} />}
-      <span className="truncate max-w-[180px]">{name || label}</span>
+      {name.toLowerCase().endsWith('.pdf') ? <FileText size={13} /> : <Download size={13} />}
+      <span className="truncate max-w-[11rem]">{name || label}</span>
     </a>
   );
 }

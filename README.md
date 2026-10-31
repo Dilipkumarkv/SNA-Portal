@@ -17,7 +17,7 @@ The SNA Portal is a dual-role educational PWA for the Integrated Course 25CS34I 
 - Virtual Terminal Lab (CMD / PowerShell / Bash, 33 commands) for CLI practice
 - Schematic viewers for the real lab machine — photographs of the M83 rear I/O, PSU, H81 board and lab room, plus boot-sequence, disk-layout and RDP/VPN diagrams
 - Guided Lab Mode with step tracking and scenario-based CLI exercises
-- Admin Dashboard with analytics, CMS, and CIE scheduling
+- Admin panel for local notes, lab manuals, notices and the CIE schedule (browser-local demo)
 - Offline-first PWA with service worker caching and installable on Android/iOS
 - Mobile screen support (responsive 360px–1024px+), touch targets >=44px, safe-area insets
 
@@ -217,7 +217,8 @@ The plan for turning this content into a learning app (modelled on learn-esp32) 
 
 ## Known Gaps
 
-- Admin analytics in TabAdmin use hardcoded sample data, not live student progress
+- Admin publishing is a local demo: uploads and notices live in this browser only, so they never
+  reach another student's device
 - Student portal is open — there is no per-student login or progress sync between devices; a
   student's ticks stay in that browser
 - `TabNotes` is gone; the 13 hand-written notes now render in the lesson's Notes tab and still
@@ -228,8 +229,8 @@ The plan for turning this content into a learning app (modelled on learn-esp32) 
   photos taken in the lab
 - The model papers in Learn › Assessments are hand-transcribed; the source CIE PDFs are not bundled
 - Offline reload has not been verified with the network actually off
-- Bundle is ~1.9 MB (574 kB gzip) because the whole curriculum, recharts, jsPDF and html2canvas
-  load eagerly. Code-splitting the admin tab and PDF export is the obvious fix
+- Bundle is ~1.5 MB (455 kB gzip) because the whole curriculum, jsPDF and html2canvas load
+  eagerly. Code-splitting the PDF export is the obvious fix
 
 ---
 

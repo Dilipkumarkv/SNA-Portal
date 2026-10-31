@@ -18,7 +18,6 @@ The current build is a **client-only application**. It runs entirely in the brow
 - **Language:** TypeScript 5.8
 - **Styling:** Tailwind CSS v4 with dark mode
 - **Icons:** Lucide React
-- **Data Visualization:** Recharts (admin analytics)
 - **Animation / PDF:** Motion, jsPDF + html2canvas
 
 **Offline & Packaging:**
@@ -89,7 +88,6 @@ including what was cut from the original plan and why, is in [`WORKFLOW.md`](WOR
 ## 7. Future Enhancements
 - Move content and admin sessions to a real backend (Firestore, or Postgres + object storage)
 - Sync per-student progress across devices (today it is browser-local)
-- Replace mocked admin analytics with real aggregations of the tracker dataset
 - Replace the generated schematic photographs with photos taken of the actual lab machines
 - Formative assessment: quizzes and self-check questions per lesson
 - Offline quiz mode with local result sync

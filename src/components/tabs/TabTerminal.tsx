@@ -7,7 +7,6 @@ import {
   ShellBottomBar, 
   OfflineIndicator, 
   ResetModal, 
-  BootScreen,
   CLScenario,
   SCENARIOS 
 } from '../terminal/TerminalComponents';
@@ -54,14 +53,12 @@ export function TabTerminal() {
   });
 
   const [showSessionManager, setShowSessionManager] = useState(false);
-  const [isBooting, setIsBooting] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [showScenarios, setShowScenarios] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CLScenario['category'] | 'all'>('all');
-  const [streamedIds, setStreamedIds] = useState<Set<string>>(new Set());
 
   // Active session derived state
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0] || null;
@@ -77,7 +74,6 @@ export function TabTerminal() {
 
   // Initialize on mount
   useEffect(() => {
-    setIsBooting(false);
     if (activeSession) {
       setShellMode(activeSession.shellMode);
       setCurrentPrompt(activeSession.currentPrompt);
@@ -227,7 +223,6 @@ export function TabTerminal() {
       timestamp: Date.now(),
     };
     setEntries(prev => appendEntries(prev, [entry]));
-    setStreamedIds(prev => { const next = new Set(prev); next.add(entry.id); return next; });
   };
 
   const handleSubmit = (e?: FormEvent) => { e?.preventDefault(); runCommand(cmdInput); };
@@ -285,6 +280,11 @@ export function TabTerminal() {
     setSessions(updated);
     setActiveSessionId(session.id);
     localStorage.setItem(ACTIVE_SESSION_KEY, session.id);
+    setShellMode(session.shellMode);
+    setCurrentPrompt(session.currentPrompt);
+    setCommandHistory([]);
+    setHistoryPointer(-1);
+    setEntries(session.entries);
   };
 
   const switchSession = (id: string) => {
@@ -343,7 +343,6 @@ export function TabTerminal() {
     setCommandHistory([]);
     setHistoryPointer(-1);
     setCmdInput('');
-    setStreamedIds(new Set());
     setEntries([
       { id: generateTerminalEntryId('init'), type: 'output', shell: 'cmd', output: getShellBanner('cmd'), timestamp: Date.now() },
       { id: generateTerminalEntryId('init'), type: 'output', shell: 'ps', output: getShellBanner('ps'), timestamp: Date.now() },
@@ -404,27 +403,33 @@ export function TabTerminal() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">CLI Terminal Lab</h2>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Weeks 6, 8, 10, 11 Practice Environment</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowSessionManager(true)} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="Session Manager">
-            <Database size={16} />
-          </button>
-        </div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm text-ink-2">
+          A simulated shell for the command-line weeks. Nothing runs on your real computer.
+        </p>
+        <button
+          onClick={() => setShowSessionManager(true)}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-control border border-line text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
+          title="Session manager"
+          aria-label="Open session manager"
+        >
+          <Database size={17} />
+        </button>
       </div>
 
       {/* Terminal Container */}
-      <div className="relative" style={{ height: viewportHeight || 'calc(100dvh - 200px)', minHeight: '400px' }}>
+      <div
+        className="relative"
+        style={{
+          height: viewportHeight ? Math.max(320, viewportHeight - 260) : 'calc(100dvh - 16.25rem)',
+          minHeight: '320px',
+        }}
+      >
         <div
           id="terminal-app-root"
           style={{ height: '100%', maxHeight: '100%' }}
           className="w-full flex flex-col overflow-hidden font-mono select-text bg-[#000000] text-[#cccccc] rounded-xl border border-white/10 shadow-2xl"
         >
-          {isBooting && <BootScreen onComplete={() => setIsBooting(false)} />}
-
           <ShellHeader
             shellMode={shellMode}
             onQuickCommand={handleQuickCommand}
@@ -449,9 +454,6 @@ export function TabTerminal() {
             onSubmit={handleSubmit}
             onReuseCommand={(cmd) => setCmdInput(cmd)}
             onKeyDown={handleKeyDown}
-            streamedIds={streamedIds}
-            onMarkStreamed={(id) => setStreamedIds(prev => { const n = new Set(prev); n.add(id); return n; })}
-            isBooting={isBooting}
             switchCount={0}
           />
 
@@ -464,39 +466,58 @@ export function TabTerminal() {
 
       {/* Session Manager Modal */}
       {showSessionManager && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <Card className="max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 dark:text-slate-100">Session Manager</h3>
-              <button onClick={() => setShowSessionManager(false)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X size={20} /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <Card className="max-h-[80vh] w-full max-w-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-line p-4">
+              <h3 className="font-display text-base font-semibold text-ink">Sessions</h3>
+              <button
+                onClick={() => setShowSessionManager(false)}
+                className="grid h-9 w-9 place-items-center rounded-control text-ink-3 transition-colors hover:bg-sunken hover:text-ink"
+                aria-label="Close session manager"
+              >
+                <X size={19} />
+              </button>
             </div>
             <div className="p-4">
-              <button onClick={createNewSession} className="w-full mb-4 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg flex items-center justify-center gap-2">
-                <Database className="w-5 h-5" /> New Session
+              <button
+                onClick={createNewSession}
+                className="mb-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-hover"
+              >
+                <Database size={17} /> New session
               </button>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="max-h-64 space-y-2 overflow-y-auto">
                 {sessions.map(s => (
-                  <div key={s.id} className={`p-3 rounded-lg border flex items-center justify-between gap-3 ${activeSessionId === s.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                    <div className="flex-1 min-w-0" onClick={() => switchSession(s.id)}>
-                      <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{s.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                        <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 rounded text-[10px] font-bold">{s.shellMode.toUpperCase()}</span>
+                  <div
+                    key={s.id}
+                    className={`flex items-center justify-between gap-3 rounded-control border p-3 ${
+                      activeSessionId === s.id ? 'border-brand/40 bg-brand-soft' : 'border-line hover:bg-sunken'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1" onClick={() => switchSession(s.id)}>
+                      <p className="truncate text-sm font-medium text-ink">{s.name}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-3">
+                        <span className="rounded bg-sunken px-1.5 py-0.5 font-semibold text-ink-2">{s.shellMode.toUpperCase()}</span>
                         <span>{new Date(s.updatedAt).toLocaleString()}</span>
-                        {s.scenarioId && <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 rounded text-[10px] font-bold">{s.scenarioId}</span>}
+                        {s.scenarioId && <span className="rounded bg-success-soft px-1.5 py-0.5 font-semibold text-success">{s.scenarioId}</span>}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => duplicateSession(s.id)} className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800" title="Duplicate"><Copy size={14} /></button>
-                      <button onClick={() => exportSession()} className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800" title="Export"><Download size={14} /></button>
-                      <button onClick={() => deleteSession(s.id)} className="p-2 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400" title="Delete"><Trash2 size={14} /></button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button onClick={() => duplicateSession(s.id)} className="grid h-8 w-8 place-items-center rounded-control text-ink-3 hover:bg-surface hover:text-ink" title="Duplicate" aria-label={`Duplicate ${s.name}`}><Copy size={14} /></button>
+                      <button onClick={() => exportSession()} className="grid h-8 w-8 place-items-center rounded-control text-ink-3 hover:bg-surface hover:text-ink" title="Export" aria-label={`Export ${s.name}`}><Download size={14} /></button>
+                      <button onClick={() => deleteSession(s.id)} className="grid h-8 w-8 place-items-center rounded-control text-ink-3 hover:bg-danger-soft hover:text-danger" title="Delete" aria-label={`Delete ${s.name}`}><Trash2 size={14} /></button>
                     </div>
                   </div>
                 ))}
-                {sessions.length === 0 && <p className="text-center text-slate-500 dark:text-slate-400 py-8">No sessions yet. Create one to start.</p>}
+                {sessions.length === 0 && <p className="py-8 text-center text-sm text-ink-3">No sessions yet. Create one to start.</p>}
               </div>
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Import Session</label>
-                <input type="file" accept=".json" onChange={(e) => e.target.files?.[0] && importSession(e.target.files[0])} className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" />
+              <div className="mt-4 border-t border-line pt-4">
+                <label className="mb-2 block text-sm font-medium text-ink">Import a session file</label>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => e.target.files?.[0] && importSession(e.target.files[0])}
+                  className="w-full rounded-control border border-line bg-canvas p-2 text-sm text-ink-2"
+                />
               </div>
             </div>
           </Card>

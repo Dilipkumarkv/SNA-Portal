@@ -112,17 +112,15 @@ export function AssessmentBank() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Assessment sections">
+      <div className="flex gap-1 rounded-control bg-sunken p-1" role="tablist" aria-label="Assessment sections">
         {TABS.map(item => (
           <button
             key={item.key}
             onClick={() => setTab(item.key)}
             role="tab"
             aria-selected={tab === item.key}
-            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
-              tab === item.key
-                ? 'bg-indigo-600 text-white'
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+            className={`min-h-9 flex-1 rounded-[0.5rem] px-2 text-xs font-semibold transition-colors ${
+              tab === item.key ? 'bg-surface text-ink shadow-sm' : 'text-ink-3 hover:text-ink-2'
             }`}
           >
             {item.label}
@@ -133,28 +131,17 @@ export function AssessmentBank() {
       {tab === 'papers' && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {THEORY_PAPERS.map(paper => (
-            <section
-              key={paper.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
-              <h3 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:border-slate-800 dark:text-indigo-400">
-                <ClipboardList size={13} /> {paper.id}: Theory Test (Model)
+            <section key={paper.id} className="rounded-card border border-line bg-surface p-4 sm:p-5">
+              <h3 className="flex items-center gap-2 border-b border-line pb-3 font-display text-sm font-semibold text-ink">
+                <ClipboardList size={15} className="text-ink-3" /> {paper.id} · Theory test
               </h3>
-              <div className="space-y-4">
+              <div className="mt-3 space-y-4">
                 {paper.sections.map(section => (
-                  <div
-                    key={section.id}
-                    className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-800/40"
-                  >
-                    <div className="absolute left-0 top-0 h-full w-1 bg-indigo-500" />
-                    <p className="mb-2 inline-block rounded border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-bold uppercase text-indigo-700 dark:border-indigo-800/60 dark:bg-indigo-950/70 dark:text-indigo-400">
-                      Question {section.id}
-                    </p>
-                    <div className="space-y-2">
+                  <div key={section.id}>
+                    <p className="text-xs font-semibold text-ink-3">Question {section.id}</p>
+                    <div className="mt-1.5 space-y-2">
                       {section.questions.map((question, index) => (
-                        <p key={index} className="text-[13px] font-medium leading-relaxed text-slate-800 dark:text-slate-200">
-                          {question}
-                        </p>
+                        <p key={index} className="text-sm leading-relaxed text-ink-2">{question}</p>
                       ))}
                     </div>
                   </div>
@@ -164,25 +151,18 @@ export function AssessmentBank() {
           ))}
 
           {PRACTICE_PAPERS.map(paper => (
-            <section
-              key={paper.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
-              <h3 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:border-slate-800 dark:text-emerald-400">
-                <FileText size={13} /> {paper.id}: Practice Test (Model)
+            <section key={paper.id} className="rounded-card border border-line bg-surface p-4 sm:p-5">
+              <h3 className="flex items-center gap-2 border-b border-line pb-3 font-display text-sm font-semibold text-ink">
+                <FileText size={15} className="text-ink-3" /> {paper.id} · Practice test
               </h3>
-              <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-800/40">
-                <div className="absolute left-0 top-0 h-full w-1 bg-emerald-500" />
-                <p className="mb-3 inline-block rounded border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/70 dark:text-emerald-400">
-                  Scenario Task (50 Marks)
-                </p>
-                <p className="mb-4 text-[13px] font-medium leading-relaxed text-slate-800 dark:text-slate-200">
-                  {paper.scenario}
-                </p>
-                <div className="space-y-1.5 rounded-r-lg border-l-2 border-emerald-300 bg-emerald-50/30 p-3 text-xs text-slate-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-slate-300">
-                  <p className="mb-1 font-bold text-slate-900 dark:text-slate-100">Scheme of Assessment:</p>
-                  {paper.scheme.map(line => <p key={line}>{line}</p>)}
-                </div>
+              <p className="mt-3 text-sm leading-relaxed text-ink-2">{paper.scenario}</p>
+              <div className="mt-3 space-y-1.5 border-t border-line pt-3">
+                <p className="text-xs font-semibold text-ink">Scheme of assessment · 50 marks</p>
+                <dl className="space-y-1">
+                  {paper.scheme.map(line => (
+                    <dd key={line} className="text-sm text-ink-2">{line}</dd>
+                  ))}
+                </dl>
               </div>
             </section>
           ))}
@@ -190,18 +170,18 @@ export function AssessmentBank() {
       )}
 
       {tab === 'viva' && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-            <HelpCircle size={13} /> Viva questions and answers
+        <section className="rounded-card border border-line bg-surface p-4 sm:p-5">
+          <h3 className="mb-4 flex items-center gap-2 font-display text-sm font-semibold text-ink">
+            <HelpCircle size={15} className="text-ink-3" /> Viva questions and answers
           </h3>
           <VivaBank />
         </section>
       )}
 
       {tab === 'questions' && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-            <ClipboardList size={13} /> CIE question bank
+        <section className="rounded-card border border-line bg-surface p-4 sm:p-5">
+          <h3 className="mb-4 flex items-center gap-2 font-display text-sm font-semibold text-ink">
+            <ClipboardList size={15} className="text-ink-3" /> CIE question bank
           </h3>
           <QuestionBank />
         </section>

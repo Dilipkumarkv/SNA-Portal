@@ -1,76 +1,53 @@
-import { useState, useEffect } from 'react';
-import { WifiIcon, CloudOff, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CloudOff } from 'lucide-react';
 import { ThemeToggle } from '../context/ThemeContext';
 
-export function Header({
-  onAdminClick,
-  isAdmin,
-  onLogout,
-}: {
-  onAdminClick?: () => void;
-  isAdmin?: boolean;
-  onLogout?: () => void;
-}) {
+export const SCREEN_TITLES: Record<string, { title: string; caption: string }> = {
+  home: { title: 'SNA Portal', caption: '25CS34I · Semester III' },
+  learn: { title: 'Learn', caption: '13 weeks · 52 lessons' },
+  labs: { title: 'Laboratory', caption: '58 experiments · M83 workstations' },
+  terminal: { title: 'Terminal', caption: 'Sandboxed command practice' },
+  links: { title: 'Resources', caption: 'Course reading and regulations' },
+  admin: { title: 'Admin', caption: 'Staff tools · local demo' },
+};
+
+export function Header({ activeTab }: { activeTab: string }) {
   const [isOnline, setIsOnline] = useState(true);
+  const screen = SCREEN_TITLES[activeTab] ?? SCREEN_TITLES.home;
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
+    const online = () => setIsOnline(true);
+    const offline = () => setIsOnline(false);
+    window.addEventListener('online', online);
+    window.addEventListener('offline', offline);
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', online);
+      window.removeEventListener('offline', offline);
     };
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm safe-top transition-colors">
-      <div className="px-4 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between max-w-4xl mx-auto gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <button
-            onClick={onAdminClick}
-            className="shrink-0 hidden sm:flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 hover:bg-indigo-700 transition-colors text-white font-bold text-xs shadow-sm"
-            title="Admin Portal"
-          >
-            SNA
-          </button>
-          <div className="min-w-0">
-            <h1 className="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight truncate">
-              System & Network Administration
-            </h1>
-            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
-              <span>25CS34I</span>
-              {isOnline ? (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-1.5 py-0 rounded-full font-bold uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/60">
-                  <WifiIcon size={10} /> Ready
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-1.5 py-0 rounded-full font-bold uppercase tracking-wider border border-amber-100 dark:border-amber-800/60">
-                  <CloudOff size={10} /> Offline
-                </span>
-              )}
-            </div>
-          </div>
+    <header className="safe-top fixed inset-x-0 top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur-xl">
+      <div className="safe-x mx-auto flex h-14 w-full max-w-5xl items-center gap-3">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-brand text-white shadow-sm">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true">
+            <path d="M5 12.5 9.5 17 19 7" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em] text-ink">
+            {screen.title}
+          </h1>
+          <p className="truncate text-xs leading-tight text-ink-3">{screen.caption}</p>
         </div>
-        <div className="text-right flex items-center gap-3 sm:gap-4 shrink-0">
-          <div className="hidden xs:block sm:block text-right">
-            <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-tight">S.E.T Polytechnic</p>
-            <p className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">Melkote | 2026</p>
-          </div>
-          {isAdmin && onLogout ? (
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 text-[10px] bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-800/60"
-            >
-              <LogOut size={12} /> Sign Out
-            </button>
-          ) : null}
-          <ThemeToggle size="sm" />
-        </div>
+        {!isOnline && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-sunken px-2.5 py-1 text-[0.6875rem] font-semibold text-ink-2">
+            <CloudOff size={12} aria-hidden="true" />
+            Offline
+          </span>
+        )}
+        <ThemeToggle size="sm" />
       </div>
     </header>
   );

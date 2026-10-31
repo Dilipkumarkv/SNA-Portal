@@ -52,7 +52,7 @@ export function SchematicIntegration({ week, category, variant = 'full' }: Schem
 
   if (!schematic) {
     return (
-      <div className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-400">
+      <div className="inline-flex items-center gap-2 rounded-control border border-line px-3 py-2 text-xs text-ink-3">
         <Search size={14} /> No schematic available
       </div>
     );

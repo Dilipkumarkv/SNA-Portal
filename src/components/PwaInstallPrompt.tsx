@@ -8,28 +8,21 @@ export function PwaInstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     setIsStandalone(isStandaloneMode);
 
     if (isStandaloneMode) return;
 
-    // Detect iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIOSDevice);
 
-    // If iOS and not standalone, show the prompt (unless already dismissed)
     const hasDismissed = localStorage.getItem('pwaPromptDismissed');
-    
-    if (!hasDismissed) {
-      if (isIOSDevice) {
-        // Small delay so it's not jarring
-        setTimeout(() => setShowPrompt(true), 2000);
-      }
+
+    if (!hasDismissed && isIOSDevice) {
+      setTimeout(() => setShowPrompt(true), 2000);
     }
 
-    // Android / Chrome: Listen for beforeinstallprompt
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -39,8 +32,7 @@ export function PwaInstallPrompt() {
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    
-    // Also check if it was caught before this component mounted
+
     if (window.deferredPrompt && !hasDismissed) {
       setDeferredPrompt(window.deferredPrompt);
       setShowPrompt(true);
@@ -71,34 +63,35 @@ export function PwaInstallPrompt() {
   if (!showPrompt || isStandalone) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6 sm:w-80 z-50 bg-white rounded-xl shadow-xl border border-slate-100 p-4 animate-in slide-in-from-bottom-5">
-      <button 
+    <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-3 right-3 z-50 rounded-card border border-line bg-surface p-4 shadow-raise sm:bottom-5 sm:left-auto sm:right-5 sm:w-80">
+      <button
         onClick={handleDismiss}
-        className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 p-1"
+        className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-control text-ink-3 transition-colors hover:bg-sunken hover:text-ink"
+        aria-label="Dismiss install prompt"
       >
-        <X size={16} />
+        <X size={15} />
       </button>
-      
+
       <div className="flex gap-3">
-        <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-          <Download className="text-indigo-600" size={20} />
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-brand-soft text-brand-text">
+          <Download size={19} />
         </div>
-        <div>
-          <h3 className="font-bold text-slate-800 text-sm">Install App</h3>
-          <p className="text-xs text-slate-500 mt-1 mb-3">
-            Install this app on your device for quick access and offline use.
+        <div className="pr-6">
+          <h3 className="font-display text-sm font-semibold text-ink">Install the portal</h3>
+          <p className="mt-1 text-xs leading-relaxed text-ink-2">
+            Keep notes and labs on your home screen, and open them without a network.
           </p>
-          
+
           {isIOS && !deferredPrompt ? (
-            <div className="text-[11px] bg-slate-50 p-2 rounded border border-slate-100 text-slate-600">
-              Tap <Share size={12} className="inline mx-1" /> and select <strong>Add to Home Screen</strong>
-            </div>
+            <p className="mt-2 rounded-control bg-sunken p-2 text-xs text-ink-2">
+              Tap <Share size={12} className="mx-0.5 inline" /> then <strong className="font-semibold text-ink">Add to Home Screen</strong>.
+            </p>
           ) : (
-            <button 
+            <button
               onClick={handleInstallClick}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors"
+              className="mt-2.5 inline-flex min-h-9 items-center rounded-control bg-brand px-3 text-xs font-semibold text-white transition-colors hover:bg-brand-hover"
             >
-              Install Now
+              Install app
             </button>
           )}
         </div>

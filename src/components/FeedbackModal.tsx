@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, MessageSquare, AlertCircle, Send } from 'lucide-react';
 import { addFeedback } from '../lib/storageService';
@@ -8,6 +8,15 @@ export function FeedbackModal({ isOpen, onClose }: { isOpen: boolean, onClose: (
   const [type, setType] = useState<'comment' | 'issue'>('comment');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,92 +45,88 @@ export function FeedbackModal({ isOpen, onClose }: { isOpen: boolean, onClose: (
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50"
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-transparent dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden transition-colors"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Send feedback"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="safe-bottom relative w-full max-w-md overflow-hidden rounded-t-card border border-line bg-surface shadow-raise sm:rounded-card"
           >
-            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Send Feedback</h3>
+            <div className="flex items-center justify-between border-b border-line p-4">
+              <h3 className="font-display text-base font-semibold text-ink">Send feedback</h3>
               <button
                 onClick={onClose}
-                className="p-1 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="grid h-9 w-9 place-items-center rounded-control text-ink-3 transition-colors hover:bg-sunken hover:text-ink"
+                aria-label="Close"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5">
-              <div className="flex gap-3 mb-5">
+            <form onSubmit={handleSubmit} className="p-4">
+              <div className="mb-4 flex gap-2 rounded-control bg-sunken p-1">
                 <button
                   type="button"
                   onClick={() => setType('comment')}
-                  className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center text-xs font-bold transition-all border ${
-                    type === 'comment'
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 shadow-sm'
-                      : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-[0.5rem] text-sm font-semibold transition-colors ${
+                    type === 'comment' ? 'bg-surface text-ink shadow-sm' : 'text-ink-3 hover:text-ink-2'
                   }`}
+                  aria-pressed={type === 'comment'}
                 >
-                  <MessageSquare size={14} className="mr-2" />
-                  Comment
+                  <MessageSquare size={15} /> Comment
                 </button>
                 <button
                   type="button"
                   onClick={() => setType('issue')}
-                  className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center text-xs font-bold transition-all border ${
-                    type === 'issue'
-                      ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 shadow-sm'
-                      : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-[0.5rem] text-sm font-semibold transition-colors ${
+                    type === 'issue' ? 'bg-surface text-ink shadow-sm' : 'text-ink-3 hover:text-ink-2'
                   }`}
+                  aria-pressed={type === 'issue'}
                 >
-                  <AlertCircle size={14} className="mr-2" />
-                  Report Issue
+                  <AlertCircle size={15} /> Report issue
                 </button>
               </div>
 
-              <div className="mb-5">
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
-                  Your Message
-                </label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder={type === 'comment' ? "What's on your mind?" : "Describe the issue..."}
-                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition-all h-32 resize-none"
-                  required
-                />
-              </div>
+              <label htmlFor="feedback-message" className="mb-1.5 block text-xs font-semibold text-ink">
+                Your message
+              </label>
+              <textarea
+                id="feedback-message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={type === 'comment' ? "What's on your mind?" : 'Describe the issue…'}
+                className="h-32 w-full resize-none rounded-control border border-line bg-canvas p-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-3 focus:border-brand"
+                required
+              />
 
               <button
                 type="submit"
                 disabled={isSubmitting || !message.trim()}
-                className={`w-full flex items-center justify-center space-x-2 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-sm focus:outline-none ${
+                className={`mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-control text-sm font-semibold text-white transition-colors ${
                   isSubmitting || !message.trim()
-                    ? 'bg-indigo-300 cursor-not-allowed'
-                    : 'bg-indigo-600 hover:bg-indigo-700'
+                    ? 'cursor-not-allowed bg-brand/40'
+                    : 'bg-brand hover:bg-brand-hover'
                 }`}
               >
                 {isSubmitting ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Sending...
-                  </span>
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                    Sending…
+                  </>
                 ) : (
                   <>
-                    <Send size={16} />
-                    <span>Send Feedback</span>
+                    <Send size={15} /> Send feedback
                   </>
                 )}
               </button>

@@ -80,10 +80,10 @@ export const LAB_SCENARIOS: Record<number, CLScenario[]> = {
     {
       id: 'lab13-step1',
       title: 'Mini Project - Lab Setup',
-      description: 'Design lab layout for 30 stations.',
+      description: 'Design lab layout for 20 stations.',
       week: 13,
       category: 'system',
-      commands: ['echo "Lab Setup Plan - 30 Stations"', 'mkdir LabPlan', 'echo "Resource Purchase & Budget" >> LabPlan/notes.txt'],
+      commands: ['echo "Lab Setup Plan - 20 Stations"', 'mkdir LabPlan', 'echo "Resource Purchase & Budget" >> LabPlan/notes.txt'],
     },
   ],
 };

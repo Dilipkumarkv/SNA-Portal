@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  BookOpen, CheckCircle2, Circle, ChevronLeft, ChevronRight, ExternalLink,
-  FlaskConical, ListChecks, ClipboardList, HelpCircle,
+  CheckCircle2, Circle, ChevronLeft, ChevronRight, ExternalLink,
+  ChevronDown, ArrowRight,
 } from 'lucide-react';
 import type { Lesson, Module } from '../../data/curriculum';
 import type { LessonRef } from '../../lib/progress';
@@ -12,7 +12,7 @@ import { WeekNotes } from './WeekNotes';
 type TabKey = 'basics' | 'overview' | 'notes' | 'schematic' | 'tryit' | 'qa';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'basics', label: 'Basics' },
+  { key: 'basics', label: 'Lesson' },
   { key: 'overview', label: 'Overview' },
   { key: 'notes', label: 'Notes' },
   { key: 'schematic', label: 'Schematic' },
@@ -61,88 +61,92 @@ export function LessonPane({
   };
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <header className="border-b border-slate-100 p-5 dark:border-slate-800">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400">
-            Week {week}
-          </span>
-          <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-            Day {day} of {courseModule.lessons.length}
-          </span>
-          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">{courseModule.title}</span>
+    <article className="overflow-hidden rounded-card border border-line bg-surface">
+      <header className="border-b border-line px-4 py-5 sm:px-6">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-3">
+          <span className="font-semibold text-brand-text">Day {day} of {courseModule.lessons.length}</span>
+          <span aria-hidden="true">·</span>
+          <span>{courseModule.title}</span>
         </div>
-        <h3 className="mt-2 text-xl font-extrabold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
+        <h2 className="mt-1.5 font-display text-[1.4rem] font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-[1.6rem]">
           {lesson.title}
-        </h3>
+        </h2>
         {lesson.overview && (
-          <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{lesson.overview}</p>
+          <p className="mt-2 max-w-[68ch] text-sm leading-relaxed text-ink-2">{lesson.overview}</p>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-4 flex items-center justify-between gap-2">
           <button
             onClick={onToggleComplete}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
-              isComplete
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                : 'border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
-            }`}
             aria-pressed={isComplete}
+            className={`inline-flex min-h-10 items-center gap-2 rounded-control px-3.5 text-sm font-semibold transition-colors ${
+              isComplete
+                ? 'bg-success-soft text-success'
+                : 'border border-line text-ink-2 hover:bg-sunken hover:text-ink'
+            }`}
           >
-            {isComplete ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+            {isComplete ? <CheckCircle2 size={16} /> : <Circle size={16} />}
             {isComplete ? 'Completed' : 'Mark complete'}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => previous && onNavigate(previous)}
               disabled={!previous}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              aria-label="Previous lesson"
+              className="grid h-10 w-10 place-items-center rounded-control border border-line text-ink-2 transition-colors hover:bg-sunken hover:text-ink disabled:opacity-35"
             >
-              <ChevronLeft size={14} /> Previous
+              <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => next && onNavigate(next)}
               disabled={!next}
-              className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Next lesson"
+              className="grid h-10 w-10 place-items-center rounded-control bg-brand text-white transition-colors hover:bg-brand-hover disabled:opacity-35"
             >
-              Next <ChevronRight size={14} />
+              <ChevronRight size={18} />
             </button>
           </div>
         </div>
       </header>
 
-      <nav className="flex gap-1 overflow-x-auto border-b border-slate-100 px-3 py-2 dark:border-slate-800" aria-label="Lesson sections">
+      <nav
+        className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line px-3 sm:px-5"
+        aria-label="Lesson sections"
+      >
         {TABS.map(item => (
           <button
             key={item.key}
             onClick={() => setTab(item.key)}
-            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
-              tab === item.key
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
-            }`}
             aria-current={tab === item.key ? 'page' : undefined}
+            className={`relative shrink-0 px-3 py-3 text-sm font-medium transition-colors ${
+              tab === item.key ? 'text-ink' : 'text-ink-3 hover:text-ink-2'
+            }`}
           >
             {item.label}
+            <span
+              className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full transition-opacity ${
+                tab === item.key ? 'bg-brand opacity-100' : 'opacity-0'
+              }`}
+            />
           </button>
         ))}
       </nav>
 
-      <div className="p-5">
+      <div className="px-4 py-6 sm:px-6">
         {tab === 'basics' && (
           lesson.sections.length === 0 ? (
             <EmptyNote text="No lesson notes were written for this day. Use the Overview tab for the lab work." />
           ) : (
-            <div className="space-y-5">
+            <div className="max-w-[68ch] space-y-7">
               {lesson.sections.map((section, index) => (
                 <section key={`${section.heading}-${index}`}>
-                  <h5 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-                    <BookOpen size={13} /> {section.heading}
-                  </h5>
-                  <div className="mt-2 space-y-2">
+                  <h3 className="border-t border-line pt-4 font-sans text-[0.9375rem] font-semibold text-ink">
+                    {section.heading}
+                  </h3>
+                  <div className="mt-2 space-y-3">
                     {section.body.map((paragraph, bodyIndex) => (
-                      <p key={bodyIndex} className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                      <p key={bodyIndex} className="text-[0.9375rem] leading-7 text-ink-2">
                         {paragraph}
                       </p>
                     ))}
@@ -154,27 +158,27 @@ export function LessonPane({
         )}
 
         {tab === 'overview' && (
-          <div className="space-y-5">
+          <div className="max-w-[68ch] space-y-7">
             {courseModule.previousSummary && (
               <section>
-                <h5 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Before this week</h5>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{courseModule.previousSummary}</p>
+                <h3 className="font-sans text-[0.9375rem] font-semibold text-ink">Before this week</h3>
+                <p className="mt-2 text-[0.9375rem] leading-7 text-ink-2">{courseModule.previousSummary}</p>
               </section>
             )}
 
             {courseModule.connection && (
               <section>
-                <h5 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Why it matters</h5>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{courseModule.connection}</p>
+                <h3 className="font-sans text-[0.9375rem] font-semibold text-ink">Why it matters</h3>
+                <p className="mt-2 text-[0.9375rem] leading-7 text-ink-2">{courseModule.connection}</p>
               </section>
             )}
 
             {courseModule.syllabusCoverage.length > 0 && (
               <section>
-                <h5 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Syllabus covered</h5>
-                <ul className="mt-2 flex flex-wrap gap-1.5">
+                <h3 className="font-sans text-[0.9375rem] font-semibold text-ink">Syllabus covered</h3>
+                <ul className="mt-2.5 flex flex-wrap gap-1.5">
                   {courseModule.syllabusCoverage.map(item => (
-                    <li key={item} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <li key={item} className="rounded-full bg-sunken px-3 py-1 text-xs font-medium text-ink-2">
                       {item}
                     </li>
                   ))}
@@ -184,17 +188,18 @@ export function LessonPane({
 
             {courseModule.practicalTasks.length > 0 && (
               <section>
-                <h5 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                  <FlaskConical size={13} /> Lab: {courseModule.labTitle}
-                </h5>
-                <ol className="mt-2 space-y-2">
+                <h3 className="font-sans text-[0.9375rem] font-semibold text-ink">
+                  Lab · {courseModule.labTitle}
+                </h3>
+                <ol className="mt-3 space-y-3">
                   {courseModule.practicalTasks.map((task, index) => (
-                    <li key={`${task.topic}-${index}`} className="flex gap-2 text-sm text-slate-600 dark:text-slate-300">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    <li key={`${task.topic}-${index}`} className="flex gap-3">
+                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-sunken text-xs font-semibold tabular-nums text-ink-2">
                         {index + 1}
                       </span>
-                      <span>
-                        <span className="font-bold text-slate-800 dark:text-slate-200">{task.topic}:</span> {task.detail}
+                      <span className="text-[0.9375rem] leading-7 text-ink-2">
+                        <span className="font-semibold text-ink">{task.topic}. </span>
+                        {task.detail}
                       </span>
                     </li>
                   ))}
@@ -204,17 +209,18 @@ export function LessonPane({
 
             {courseModule.references.length > 0 && (
               <section>
-                <h5 className="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Reference links</h5>
-                <ul className="mt-2 space-y-1.5">
+                <h3 className="font-sans text-[0.9375rem] font-semibold text-ink">Reference links</h3>
+                <ul className="mt-2 divide-y divide-line rounded-control border border-line">
                   {courseModule.references.map(reference => (
                     <li key={reference.url}>
                       <a
                         href={reference.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1 break-all text-xs font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+                        className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm font-medium text-ink transition-colors hover:bg-sunken"
                       >
-                        {reference.label} <ExternalLink size={11} className="shrink-0" />
+                        <span className="min-w-0 break-words">{reference.label}</span>
+                        <ExternalLink size={14} className="shrink-0 text-ink-3" aria-hidden="true" />
                       </a>
                     </li>
                   ))}
@@ -231,45 +237,44 @@ export function LessonPane({
         {tab === 'tryit' && <TryItTab week={week} />}
 
         {tab === 'qa' && (
-          <div className="space-y-6">
+          <div className="max-w-[68ch] space-y-7">
             <section>
-              <h5 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                <ClipboardList size={13} /> Exam-style questions
-              </h5>
+              <h3 className="font-sans text-[0.9375rem] font-semibold text-ink">Exam-style questions</h3>
               {lesson.questions.length === 0 ? (
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">No questions were set for this lesson.</p>
+                <p className="mt-2 text-sm text-ink-3">No questions were set for this lesson.</p>
               ) : (
-                <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
+                <ol className="mt-2.5 list-decimal space-y-2 pl-5 text-[0.9375rem] leading-7 text-ink-2">
                   {lesson.questions.map((question, index) => <li key={index}>{question}</li>)}
                 </ol>
               )}
             </section>
 
             <section>
-              <h5 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                <HelpCircle size={13} /> Viva questions for {courseModule.labTitle}
-              </h5>
+              <h3 className="font-sans text-[0.9375rem] font-semibold text-ink">Viva questions</h3>
+              <p className="mt-1 text-xs text-ink-3">{courseModule.labTitle}</p>
               {courseModule.viva.length === 0 ? (
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">No viva questions for this week.</p>
+                <p className="mt-2 text-sm text-ink-3">No viva questions for this week.</p>
               ) : (
-                <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
+                <ul className="mt-2 divide-y divide-line rounded-control border border-line">
                   {courseModule.viva.map(item => {
                     const open = openViva.has(item.number);
                     return (
                       <li key={item.number}>
                         <button
                           onClick={() => toggleViva(item.number)}
-                          className="flex w-full items-start gap-2 py-2 text-left"
                           aria-expanded={open}
+                          className="flex w-full items-start gap-3 px-3.5 py-3 text-left transition-colors hover:bg-sunken"
                         >
-                          <ListChecks size={14} className="mt-0.5 shrink-0 text-indigo-500" />
-                          <span className="flex-1 text-sm font-bold text-slate-800 dark:text-slate-200">
-                            Q{item.number}. {item.question}
-                          </span>
-                          <ChevronRight size={14} className={`mt-1 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+                          <span className="mt-0.5 text-xs font-semibold tabular-nums text-ink-3">Q{item.number}</span>
+                          <span className="flex-1 text-sm font-medium text-ink">{item.question}</span>
+                          <ChevronDown
+                            size={16}
+                            className={`mt-0.5 shrink-0 text-ink-3 transition-transform ${open ? 'rotate-180' : ''}`}
+                            aria-hidden="true"
+                          />
                         </button>
                         {open && (
-                          <p className="ml-6 pb-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{item.answer}</p>
+                          <p className="px-3.5 pb-4 pl-10 text-sm leading-7 text-ink-2">{item.answer}</p>
                         )}
                       </li>
                     );
@@ -280,13 +285,37 @@ export function LessonPane({
           </div>
         )}
       </div>
+
+      <footer className="flex items-center justify-between gap-3 border-t border-line px-4 py-4 sm:px-6">
+        <button
+          onClick={onToggleComplete}
+          className={`inline-flex min-h-10 items-center gap-2 rounded-control px-3.5 text-sm font-semibold transition-colors ${
+            isComplete
+              ? 'bg-success-soft text-success'
+              : 'border border-line text-ink-2 hover:bg-sunken hover:text-ink'
+          }`}
+        >
+          {isComplete ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+          {isComplete ? 'Completed' : 'Mark complete'}
+        </button>
+        {next ? (
+          <button
+            onClick={() => onNavigate(next)}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-control bg-ink px-4 text-sm font-semibold text-canvas transition-opacity hover:opacity-90"
+          >
+            Next lesson <ArrowRight size={15} aria-hidden="true" />
+          </button>
+        ) : (
+          <span className="text-sm text-ink-3">Last lesson of the course</span>
+        )}
+      </footer>
     </article>
   );
 }
 
 function EmptyNote({ text }: { text: string }) {
   return (
-    <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-400">
+    <p className="rounded-control border border-dashed border-line-strong bg-sunken p-4 text-sm text-ink-2">
       {text}
     </p>
   );

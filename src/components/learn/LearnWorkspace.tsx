@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BookOpen, CheckCircle2, Circle, ClipboardList, GraduationCap } from 'lucide-react';
+import { BookOpen, CheckCircle2, ClipboardList } from 'lucide-react';
 import { CURRICULUM } from '../../data/curriculum';
 import {
   getLastLesson, getSummary, isLessonComplete, nextLesson, previousLesson,
@@ -41,9 +41,9 @@ function normalizeLegacyHash() {
 export function LearnWorkspace() {
   const [mode, setMode] = useState<LearnMode>(() => parseHash()?.mode ?? 'lessons');
   const [ref, setRef] = useState<LessonRef>(() => parseHash()?.ref ?? initialRef());
-  const [, setProgressVersion] = useState(0);
+  const [, setVersion] = useState(0);
 
-  useEffect(() => subscribeProgress(() => setProgressVersion(version => version + 1)), []);
+  useEffect(() => subscribeProgress(() => setVersion(version => version + 1)), []);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -98,40 +98,39 @@ export function LearnWorkspace() {
   };
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-2xl bg-indigo-600 p-5 text-white shadow-sm">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-indigo-200">
-              <GraduationCap size={14} /> Learn
-            </p>
-            <h2 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">System &amp; Network Administration</h2>
-            <p className="mt-1 text-xs text-indigo-100">13 weeks · {summary.total} lessons · 58 lab experiments</p>
+    <div className="mx-auto w-full max-w-5xl space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <h2 className="font-display text-title font-semibold text-ink">System &amp; Network Administration</h2>
+          <p className="mt-1 text-sm text-ink-2">
+            {summary.completed} of {summary.total} lessons complete
+          </p>
+        </div>
+        <div className="min-w-[9rem] flex-1 sm:max-w-[16rem]">
+          <div className="flex items-center justify-between text-xs font-medium text-ink-3">
+            <span>Course progress</span>
+            <span className="tabular-nums">{percent}%</span>
           </div>
-          <div className="shrink-0 text-right">
-            <p className="text-2xl font-extrabold leading-none">{summary.completed}<span className="text-sm font-bold text-indigo-200">/{summary.total}</span></p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-indigo-200">lessons done</p>
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-sunken">
+            <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${percent}%` }} />
           </div>
         </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-indigo-900/40">
-          <div className="h-full rounded-full bg-white transition-all duration-300" style={{ width: `${percent}%` }} />
-        </div>
-      </section>
+      </div>
 
-      <div className="flex gap-1.5" role="tablist" aria-label="Learn sections">
+      <div className="grid grid-cols-2 gap-1 rounded-control bg-sunken p-1" role="tablist" aria-label="Learn sections">
         {([
-          { key: 'lessons', label: 'Lessons', icon: <BookOpen size={14} /> },
-          { key: 'assessments', label: 'Assessments', icon: <ClipboardList size={14} /> },
+          { key: 'lessons', label: 'Lessons', icon: <BookOpen size={16} /> },
+          { key: 'assessments', label: 'Assessments', icon: <ClipboardList size={16} /> },
         ] as const).map(item => (
           <button
             key={item.key}
             onClick={() => changeMode(item.key)}
             role="tab"
             aria-selected={mode === item.key}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-[9px] text-sm font-semibold transition-colors ${
               mode === item.key
-                ? 'bg-indigo-600 text-white'
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                ? 'bg-surface text-ink shadow-sm'
+                : 'text-ink-2 hover:text-ink'
             }`}
           >
             {item.icon}
@@ -141,79 +140,81 @@ export function LearnWorkspace() {
       </div>
 
       {mode === 'assessments' ? <AssessmentBank /> : (
-      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-5">
-        <nav
-          className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:block lg:space-y-1.5 lg:overflow-visible lg:px-0"
-          aria-label="Weeks"
-        >
-          {CURRICULUM.map(item => {
-            const weekProgress = summary.byWeek[item.id] ?? { completed: 0, total: item.lessons.length };
-            const active = item.id === ref.week;
-            const done = weekProgress.completed === weekProgress.total;
-            return (
-              <button
-                key={item.id}
-                onClick={() => selectWeek(item.id)}
-                className={`flex w-40 shrink-0 flex-col rounded-xl border px-3 py-2 text-left transition-colors lg:w-full ${
-                  active
-                    ? 'border-indigo-300 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/40'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/60'
-                }`}
-                aria-current={active ? 'true' : undefined}
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                    Week {item.id}
-                  </span>
-                  <span className={`flex items-center gap-0.5 text-[10px] font-bold ${done ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                    {done ? <CheckCircle2 size={11} /> : null}
-                    {weekProgress.completed}/{weekProgress.total}
-                  </span>
-                </span>
-                <span className={`mt-0.5 truncate text-xs font-bold ${active ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-300'}`}>
-                  {item.title}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+        <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-6">
+          <nav className="no-scrollbar -mx-4 overflow-x-auto px-4 lg:mx-0 lg:overflow-visible lg:px-0" aria-label="Weeks">
+            <div className="flex gap-1.5 lg:flex-col lg:gap-1">
+              {CURRICULUM.map(item => {
+                const weekProgress = summary.byWeek[item.id] ?? { completed: 0, total: item.lessons.length };
+                const active = item.id === ref.week;
+                const done = weekProgress.completed === weekProgress.total;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => selectWeek(item.id)}
+                    aria-current={active ? 'true' : undefined}
+                    className={`group flex shrink-0 flex-col items-center gap-0.5 rounded-control px-3 py-2 transition-colors lg:w-full lg:flex-row lg:items-center lg:gap-2.5 lg:px-3 ${
+                      active
+                        ? 'bg-brand-soft text-brand-text'
+                        : 'text-ink-2 hover:bg-sunken'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold tabular-nums lg:w-7 lg:text-left">{item.id}</span>
+                    <span className="hidden flex-1 truncate text-sm font-medium lg:block">{item.title}</span>
+                    <span className="flex items-center gap-1 text-[0.625rem] font-semibold tabular-nums lg:text-xs">
+                      {done ? <CheckCircle2 size={12} className="text-success" aria-hidden="true" /> : null}
+                      <span className="lg:hidden">{weekProgress.completed}/{weekProgress.total}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
 
-        <div className="mt-5 space-y-3 lg:mt-0">
-          <div className="flex flex-wrap gap-1.5" aria-label="Lessons in this week">
-            {courseModule.lessons.map(item => {
-              const complete = isLessonComplete(courseModule.id, item.number);
-              const active = item.number === lesson.number;
-              return (
-                <button
-                  key={item.number}
-                  onClick={() => navigate({ week: courseModule.id, day: item.number })}
-                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                    active
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
-                  }`}
-                  aria-current={active ? 'true' : undefined}
-                >
-                  {complete ? <CheckCircle2 size={12} /> : <Circle size={12} />}
-                  Day {item.number}
-                </button>
-              );
-            })}
+          <div className="mt-5 min-w-0 space-y-3 lg:mt-0">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-base font-semibold text-ink">
+                Week {courseModule.id} · {courseModule.title}
+              </h3>
+              <span className="text-xs tabular-nums text-ink-3">
+                {summary.byWeek[courseModule.id]?.completed ?? 0}/{courseModule.lessons.length} done
+              </span>
+            </div>
+
+            <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1" aria-label="Days in this week">
+              {courseModule.lessons.map(item => {
+                const complete = isLessonComplete(courseModule.id, item.number);
+                const active = item.number === lesson.number;
+                return (
+                  <button
+                    key={item.number}
+                    onClick={() => navigate({ week: courseModule.id, day: item.number })}
+                    aria-current={active ? 'true' : undefined}
+                    className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-colors ${
+                      active
+                        ? 'bg-ink text-canvas'
+                        : 'border border-line bg-surface text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    {complete && <CheckCircle2 size={13} className={active ? 'text-signal' : 'text-success'} aria-hidden="true" />}
+                    Day {item.number}
+                  </button>
+                );
+              })}
+            </div>
+
+            <LessonPane
+              module={courseModule}
+              lesson={lesson}
+              week={courseModule.id}
+              day={lesson.number}
+              isComplete={isLessonComplete(courseModule.id, lesson.number)}
+              onToggleComplete={() => toggleLesson(courseModule.id, lesson.number)}
+              previous={previousLesson(courseModule.id, lesson.number)}
+              next={nextLesson(courseModule.id, lesson.number)}
+              onNavigate={navigate}
+            />
           </div>
-
-          <LessonPane
-            module={courseModule}
-            lesson={lesson}
-            week={courseModule.id}
-            day={lesson.number}
-            isComplete={isLessonComplete(courseModule.id, lesson.number)}
-            onToggleComplete={() => toggleLesson(courseModule.id, lesson.number)}
-            previous={previousLesson(courseModule.id, lesson.number)}
-            next={nextLesson(courseModule.id, lesson.number)}
-            onNavigate={navigate}
-          />
         </div>
-      </div>
       )}
     </div>
   );

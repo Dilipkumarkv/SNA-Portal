@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Search, ChevronDown, HelpCircle } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 import { CURRICULUM } from '../../data/curriculum';
 
 interface BankViva {
@@ -47,51 +47,46 @@ export function VivaBank() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">
-          <HelpCircle size={14} /> Viva question bank
-        </h3>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-          {filtered.length}/{ALL_VIVA.length}
-        </span>
-      </div>
-
       <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
         <input
           value={query}
           onChange={event => setQuery(event.target.value)}
           placeholder="Search viva questions and answers…"
-          className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-amber-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          className="w-full rounded-control border border-line bg-surface py-2.5 pl-9 pr-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-3 focus:border-brand"
           aria-label="Search viva questions"
         />
       </div>
 
-      <div className="flex gap-1 overflow-x-auto pb-1">
+      <div className="no-scrollbar flex gap-1 overflow-x-auto rounded-control bg-sunken p-1">
         <button
           onClick={() => setWeek('all')}
-          className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${
-            week === 'all' ? 'bg-amber-500 text-white' : 'border border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
+          className={`shrink-0 rounded-[0.5rem] px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+            week === 'all' ? 'bg-surface text-ink shadow-sm' : 'text-ink-3 hover:text-ink-2'
           }`}
+          aria-pressed={week === 'all'}
         >
-          All
+          All weeks
         </button>
         {WEEKS.map(id => (
           <button
             key={id}
             onClick={() => setWeek(id)}
-            className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${
-              week === id ? 'bg-amber-500 text-white' : 'border border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
+            className={`shrink-0 rounded-[0.5rem] px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+              week === id ? 'bg-surface text-ink shadow-sm' : 'text-ink-3 hover:text-ink-2'
             }`}
+            aria-pressed={week === id}
           >
-            Wk {id}
+            Week {id}
           </button>
         ))}
       </div>
 
+      <p className="text-xs text-ink-3">{filtered.length} of {ALL_VIVA.length} questions</p>
+
       <div className="space-y-2">
         {filtered.length === 0 && (
-          <p className="rounded-lg border border-dashed border-slate-300 p-4 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          <p className="rounded-control border border-dashed border-line-strong p-4 text-sm text-ink-2">
             No viva questions match that search.
           </p>
         )}
@@ -99,22 +94,20 @@ export function VivaBank() {
           const key = `${item.week}-${item.number}`;
           const expanded = open.has(key);
           return (
-            <div key={key} className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <div key={key} className="overflow-hidden rounded-control border border-line">
               <button
                 onClick={() => toggle(key)}
-                className="flex w-full items-start gap-2 p-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/70"
+                className="flex w-full items-start gap-2.5 p-3 text-left transition-colors hover:bg-sunken"
                 aria-expanded={expanded}
               >
-                <span className="mt-0.5 shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
-                  Wk {item.week}
-                </span>
-                <span className="flex-1 text-xs font-bold leading-snug text-slate-800 dark:text-slate-200">
+                <span className="mt-0.5 shrink-0 text-xs font-semibold text-ink-3">Wk {item.week}</span>
+                <span className="flex-1 text-sm font-medium leading-snug text-ink">
                   Q{item.number}. {item.question}
                 </span>
-                <ChevronDown size={14} className={`mt-0.5 shrink-0 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                <ChevronDown size={15} className={`mt-0.5 shrink-0 text-ink-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
               </button>
               {expanded && (
-                <p className="border-l-2 border-amber-400 px-3 pb-3 pl-4 text-xs leading-relaxed text-slate-600 dark:border-amber-500 dark:text-slate-300">
+                <p className="border-t border-line bg-sunken px-3 py-3 text-sm leading-relaxed text-ink-2">
                   {item.answer}
                 </p>
               )}

@@ -75,29 +75,27 @@ export function TryItTab({ week }: TryItTabProps) {
   return (
     <div className="space-y-4">
       {spec.note && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+        <p className="rounded-control border border-line bg-sunken p-3 text-sm leading-relaxed text-ink-2">
           {spec.note}
         </p>
       )}
 
       {spec.commands.length > 0 && (
         <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-            Run these in order
-          </p>
+          <p className="mb-2 text-xs font-semibold text-ink-3">Run these in order</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {spec.commands.map(({ cmd, label }) => (
               <button
                 key={cmd}
                 onClick={() => run(cmd)}
-                className="group flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:border-indigo-300 hover:bg-indigo-50/40 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/30"
+                className="group flex items-start gap-2.5 rounded-control border border-line bg-surface p-3 text-left transition-colors hover:border-line-strong hover:bg-sunken"
               >
-                <span className="mt-0.5 shrink-0 rounded-md bg-indigo-50 p-1.5 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                <span className="mt-0.5 shrink-0 rounded-[0.4rem] bg-brand-soft p-1.5 text-brand-text">
                   <Play size={12} />
                 </span>
                 <span className="min-w-0">
-                  <code className="block truncate font-mono text-xs font-bold text-slate-900 dark:text-slate-100">{cmd}</code>
-                  <span className="mt-0.5 block text-[11px] leading-snug text-slate-500 dark:text-slate-400">{label}</span>
+                  <code className="block truncate font-mono text-xs font-semibold text-ink">{cmd}</code>
+                  <span className="mt-0.5 block text-xs leading-snug text-ink-3">{label}</span>
                 </span>
               </button>
             ))}
@@ -105,14 +103,14 @@ export function TryItTab({ week }: TryItTabProps) {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-slate-800 bg-[#0b1020] shadow-inner">
-        <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-3 py-2">
-          <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+      <div className="overflow-hidden rounded-control border border-line bg-[#0b0d16]">
+        <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
             <TerminalSquare size={13} /> {spec.shell === 'ps' ? 'PowerShell' : 'Command Prompt'}
           </span>
           <button
             onClick={reset}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-bold text-slate-400 hover:bg-white/10 hover:text-white"
+            className="flex items-center gap-1 rounded-[0.4rem] px-2 py-1 text-xs font-semibold text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
           >
             <RotateCcw size={12} /> Reset
           </button>
@@ -120,7 +118,7 @@ export function TryItTab({ week }: TryItTabProps) {
 
         <div className="h-64 overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed">
           {lines.length === 0 && (
-            <p className="text-slate-500">Pick a command above, or type one below. Nothing here touches your real computer.</p>
+            <p className="text-slate-400">Pick a command above, or type one below. Nothing here touches your real computer.</p>
           )}
           {lines.map(line => (
             <div key={line.id} className="whitespace-pre-wrap break-words">

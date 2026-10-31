@@ -22,9 +22,6 @@ interface TerminalScreenProps {
   onSubmit: (e?: FormEvent) => void;
   onReuseCommand: (cmd: string) => void;
   onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
-  streamedIds: Set<string>;
-  onMarkStreamed: (id: string) => void;
-  isBooting: boolean;
   switchCount: number;
 }
 
@@ -38,9 +35,6 @@ export function TerminalScreen({
   onSubmit,
   onReuseCommand,
   onKeyDown,
-  streamedIds,
-  onMarkStreamed,
-  isBooting,
   switchCount,
 }: TerminalScreenProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -50,7 +44,7 @@ export function TerminalScreen({
   useEffect(() => {
     scrollAreaRef.current?.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     inputRef.current?.focus();
-  }, [entries, switchCount, isBooting]);
+  }, [entries, switchCount]);
 
   const handleCopy = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
@@ -75,11 +69,6 @@ export function TerminalScreen({
         <div
           key={entry.id}
           className="relative group"
-          style={{
-            opacity: streamedIds.has(entry.id) ? 1 : 0,
-            transform: streamedIds.has(entry.id) ? 'translateY(0)' : 'translateY(8px)',
-            transition: 'opacity 0.3s ease, transform 0.3s ease',
-          }}
         >
           <div className="flex gap-3" style={{ minHeight: '22px' }}>
             {(entry.type === 'input' || entry.type === 'output' || entry.type === 'error') && entry.prompt && (
@@ -149,7 +138,6 @@ export function TerminalScreen({
             }}
             autoComplete="off"
             spellCheck={false}
-            disabled={isBooting}
             aria-label="Terminal command input"
           />
         </form>
@@ -378,7 +366,7 @@ export function ShellHeader({
       </div>
 
       {/* Quick Command Chips */}
-      <div className="px-3 pb-3 sm:px-4 overflow-x-auto">
+      <div className="no-scrollbar px-3 pb-3 sm:px-4 overflow-x-auto">
         <div className="flex gap-2 min-w-max" role="toolbar" aria-label="Quick commands">
           {quickCommands.map((qc) => (
             <button
@@ -527,29 +515,6 @@ export function ResetModal({ isOpen, onClose, onConfirm }: ResetModalProps) {
           >
             <RotateCcw size={14} /> Reset Lab
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface BootScreenProps {
-  onComplete: () => void;
-}
-
-export function BootScreen({ onComplete }: BootScreenProps) {
-  useEffect(() => {
-    const timer = setTimeout(onComplete, 1500);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-4xl font-bold text-indigo-600 mb-4">SNA Terminal Lab</div>
-        <div className="text-white/60 text-sm">Initializing Virtual Environment...</div>
-        <div className="mt-6 h-2 w-48 bg-white/10 rounded-full overflow-hidden mx-auto">
-          <div className="h-full bg-indigo-600 rounded-full animate-pulse" style={{ width: '100%' }} />
         </div>
       </div>
     </div>
