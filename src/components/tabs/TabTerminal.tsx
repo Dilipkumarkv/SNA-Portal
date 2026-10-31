@@ -405,7 +405,7 @@ export function TabTerminal() {
     <div className="space-y-6">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-sm text-ink-2">
-          A simulated shell for the command-line weeks. Nothing runs on your real computer.
+          Commands from exam day work here. Nothing runs on your real computer.
         </p>
         <button
           onClick={() => setShowSessionManager(true)}
@@ -421,7 +421,9 @@ export function TabTerminal() {
       <div
         className="relative"
         style={{
-          height: viewportHeight ? Math.max(320, viewportHeight - 260) : 'calc(100dvh - 16.25rem)',
+          height: viewportHeight
+            ? Math.max(320, viewportHeight - (window.innerWidth >= 1024 ? 300 : 400))
+            : 'calc(100dvh - 25rem)',
           minHeight: '320px',
         }}
       >

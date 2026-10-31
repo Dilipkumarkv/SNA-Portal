@@ -13,12 +13,12 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'icon.svg', 'apple-touch-icon-180x180.png'],
         manifest: {
-          name: 'System & Network Admin',
-          short_name: 'SNA',
+          name: 'SNA Exam Guide',
+          short_name: 'SNA Exam',
           id: '/',
-          description: 'System & Network Administration CompanionApp',
-          theme_color: '#4f46e5',
-          background_color: '#ffffff',
+          description: 'Practical exam companion for System & Network Administration',
+          theme_color: '#f2eee3',
+          background_color: '#f2eee3',
           display: 'standalone',
           start_url: '/',
           icons: [

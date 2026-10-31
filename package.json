@@ -8,8 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
+    "exam:content": "node tools/build-exam-content.mjs",
+    "prebuild": "node tools/build-exam-content.mjs",
     "lint": "tsc --noEmit",
-    "test": "node --import tsx --test tests/routing.test.ts tests/progress.test.ts tests/storage.test.ts"
+    "test": "node --import tsx --test tests/routing.test.ts tests/progress.test.ts tests/storage.test.ts tests/exam-routing.test.ts"
   },
   "dependencies": {
     "@capacitor/core": "^8.4.0",

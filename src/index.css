@@ -38,63 +38,68 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --canvas: #f3f5fa;
-  --surface: #ffffff;
-  --surface-sunken: #eef1f8;
-  --surface-raised: #ffffff;
-  --line: #e1e5f0;
-  --line-strong: #cbd2e3;
-  --ink: #0d1424;
-  --ink-2: #46526b;
-  --ink-3: #68748b;
-  --brand: #4f46e5;
-  --brand-hover: #4338ca;
-  --brand-text: #4338ca;
-  --brand-soft: #eceafe;
-  --brand-ring: #a5a1fb;
-  --signal: #f0b429;
-  --success: #0b8a5f;
-  --success-soft: #e3f6ee;
-  --danger: #c2261c;
-  --danger-soft: #fdeceb;
+  color-scheme: light;
+  --canvas: #f2eee3;
+  --surface: #fbf8ef;
+  --surface-sunken: #e9e3d5;
+  --surface-raised: #fffdf7;
+  --line: #ddd6c5;
+  --line-strong: #c6bca6;
+  --ink: #191710;
+  --ink-2: #4f4a3d;
+  --ink-3: #6a6456;
+  --brand: #b03a17;
+  --brand-hover: #8f2f10;
+  --brand-text: #a13812;
+  --brand-soft: #f7e4d8;
+  --brand-ring: #d89b7c;
+  --on-brand: #fffdf7;
+  --signal: #8a5a00;
+  --success: #17603f;
+  --success-soft: #e1efe5;
+  --danger: #a51f1f;
+  --danger-soft: #f8e3e0;
 
-  --radius-card: 1.25rem;
-  --radius-control: 0.75rem;
+  --radius-card: 0.875rem;
+  --radius-control: 0.625rem;
 
-  --shadow-raise: 0 1px 2px rgba(13, 20, 36, 0.05), 0 12px 28px -18px rgba(13, 20, 36, 0.28);
-  --shadow-float: 0 -6px 24px -18px rgba(13, 20, 36, 0.35);
+  --shadow-raise: 0 1px 2px rgba(25, 23, 16, 0.05), 0 14px 30px -22px rgba(25, 23, 16, 0.5);
+  --shadow-float: 0 -6px 24px -18px rgba(25, 23, 16, 0.35);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark {
-  --canvas: #080d18;
-  --surface: #111a2c;
-  --surface-sunken: #0d1524;
-  --surface-raised: #16213a;
-  --line: #223050;
-  --line-strong: #33446a;
-  --ink: #f2f5fc;
-  --ink-2: #aab7cf;
-  --ink-3: #7f8da8;
-  --brand: #5b54f0;
-  --brand-hover: #6d66ff;
-  --brand-text: #a9a7ff;
-  --brand-soft: #1b2050;
-  --brand-ring: #4f46e5;
-  --signal: #f5c451;
-  --success: #34d399;
-  --success-soft: #0c2f26;
-  --danger: #f87171;
-  --danger-soft: #341314;
+  color-scheme: dark;
+  --canvas: #0d0c0a;
+  --surface: #161410;
+  --surface-sunken: #100f0c;
+  --surface-raised: #1e1b15;
+  --line: #2e2921;
+  --line-strong: #443c2e;
+  --ink: #f3eee1;
+  --ink-2: #c0b7a5;
+  --ink-3: #938a77;
+  --brand: #ec7a45;
+  --brand-hover: #f58d5c;
+  --brand-text: #f6a077;
+  --brand-soft: #2b180e;
+  --brand-ring: #8f4a2a;
+  --on-brand: #160f08;
+  --signal: #f0b429;
+  --success: #5ccf94;
+  --success-soft: #10251a;
+  --danger: #f08a80;
+  --danger-soft: #2b1412;
 
-  --shadow-raise: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 32px -24px rgba(0, 0, 0, 0.8);
+  --shadow-raise: 0 1px 2px rgba(0, 0, 0, 0.35), 0 16px 32px -24px rgba(0, 0, 0, 0.85);
   --shadow-float: 0 -8px 28px -20px rgba(0, 0, 0, 0.9);
 }
 
 @theme inline {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
 
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
@@ -109,6 +114,7 @@
   --color-brand-hover: var(--brand-hover);
   --color-brand-text: var(--brand-text);
   --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
   --color-signal: var(--signal);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -121,13 +127,13 @@
   --shadow-raise: var(--shadow-raise);
   --shadow-float: var(--shadow-float);
 
-  --text-display: clamp(2rem, 1.55rem + 2.2vw, 3.25rem);
-  --text-display--line-height: 1.02;
+  --text-display: clamp(2.25rem, 1.6rem + 2.6vw, 3.6rem);
+  --text-display--line-height: 0.98;
   --text-display--letter-spacing: -0.035em;
 
-  --text-title: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
-  --text-title--line-height: 1.15;
-  --text-title--letter-spacing: -0.025em;
+  --text-title: clamp(1.35rem, 1.15rem + 0.7vw, 1.75rem);
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.03em;
 }
 
 html {
@@ -160,8 +166,13 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  background: color-mix(in srgb, var(--brand) 24%, transparent);
   color: var(--ink);
+}
+
+input,
+textarea {
+  caret-color: var(--brand);
 }
 
 :focus-visible {
@@ -190,25 +201,23 @@ p {
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-/* Page gutter that also clears notches in landscape. `max()` keeps a 1rem
-   baseline on devices that report no inset, rather than collapsing to 0. */
 .safe-x {
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
-/* Room for the fixed tab bar on any device. */
 .nav-offset {
   padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--line-strong);
   border-radius: 999px;
+  border: 2px solid var(--canvas);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -219,6 +228,63 @@ p {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Tabular figures for times, counts and cumulative clocks. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A faint plotting grid, used only where the page is making a plan. */
+.plot-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* The page changes once, on navigation; sheets rise once, on open. */
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.screen-enter {
+  animation: screen-in 0.34s var(--ease-out-expo) both;
+}
+
+.sheet-panel {
+  animation: sheet-in 0.32s var(--ease-out-expo) both;
+}
+
+.sheet-backdrop {
+  animation: backdrop-in 0.2s ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {

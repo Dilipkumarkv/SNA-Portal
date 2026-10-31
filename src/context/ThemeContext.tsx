@@ -75,24 +75,20 @@ export function ThemeToggle({ className = '', size = 'md' }: { className?: strin
   };
 
   const buttonPaddings = {
-    sm: 'p-1.5',
-    md: 'p-2',
-    lg: 'p-2.5',
+    sm: 'p-2',
+    md: 'p-2.5',
+    lg: 'p-3',
   };
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className={`relative inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-amber-400 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${buttonPaddings[size]} ${className}`}
-      title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-      aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      className={`relative inline-flex items-center justify-center rounded-control border border-line bg-raised text-ink-2 transition-colors hover:border-line-strong hover:bg-sunken hover:text-ink ${buttonPaddings[size]} ${className}`}
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {isDark ? (
-        <Sun size={iconSizes[size]} className="animate-spin-slow text-amber-400" />
-      ) : (
-        <Moon size={iconSizes[size]} className="text-slate-600" />
-      )}
+      {isDark ? <Sun size={iconSizes[size]} aria-hidden="true" /> : <Moon size={iconSizes[size]} aria-hidden="true" />}
     </button>
   );
 }

@@ -327,7 +327,7 @@ export function ShellHeader({
               onClick={() => setShowScenarios(!showScenarios)}
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-left text-sm font-mono text-white/80 hover:bg-white/10 transition-colors flex items-center justify-between"
             >
-              <span>{selectedScenario ? scenarios.find(s => s.id === selectedScenario)?.title || 'Select Scenario' : '📋 Select Lab Scenario'}</span>
+              <span>{selectedScenario ? scenarios.find(s => s.id === selectedScenario)?.title || 'Select Scenario' : 'Select Lab Scenario'}</span>
               <ChevronDown size={16} className={showScenarios ? 'rotate-180' : ''} />
             </button>
             {showScenarios && (
@@ -337,7 +337,7 @@ export function ShellHeader({
                     <button
                       key={cat}
                       onClick={() => setActiveCategory(cat as any)}
-                      className={`px-3 py-1 text-xs rounded whitespace-nowrap transition-colors ${activeCategory === cat ? 'bg-indigo-600 text-white' : 'text-white/70 hover:bg-white/10'}`}
+                      className={`px-3 py-1 text-xs rounded whitespace-nowrap transition-colors ${activeCategory === cat ? 'bg-[#b03a17] text-white' : 'text-white/70 hover:bg-white/10'}`}
                     >
                       {cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
                     </button>
@@ -348,12 +348,9 @@ export function ShellHeader({
                     <button
                       key={s.id}
                       onClick={() => { onScenarioSelect(s.id); setShowScenarios(false); }}
-                      className={`w-full px-3 py-2 text-left rounded transition-colors ${selectedScenario === s.id ? 'bg-indigo-600/50' : 'hover:bg-white/5'}`}
+                      className={`w-full px-3 py-2 text-left rounded transition-colors ${selectedScenario === s.id ? 'bg-[#b03a17]/60' : 'hover:bg-white/5'}`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold">{s.week}</span>
-                        <span className="text-xs px-1.5 py-0.5 bg-white/10 rounded">{s.category}</span>
-                      </div>
+                      <span className="inline-block text-xs px-1.5 py-0.5 bg-white/10 rounded">{s.category}</span>
                       <p className="text-sm font-medium">{s.title}</p>
                       <p className="text-xs text-white/50 mt-0.5">{s.description}</p>
                     </button>
@@ -401,7 +398,7 @@ export function ShellHeader({
 
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg shadow-lg animate-slide-up">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-[#b03a17] text-white text-sm rounded-lg shadow-lg animate-slide-up">
           {toastMessage}
         </div>
       )}
@@ -430,7 +427,7 @@ export function ShellBottomBar({ shellMode, onSwitchMode }: ShellBottomBarProps)
             onClick={() => onSwitchMode(m.mode)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all min-w-[100px] justify-center ${
               shellMode === m.mode
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                ? 'bg-[#b03a17] text-white shadow-lg shadow-black/30'
                 : 'text-white/70 hover:bg-white/10 hover:text-white'
             }`}
           >
