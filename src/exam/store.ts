@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ExamState, VivaMark } from './types';
+import { LAB_IDS, type ExamState, type LabId, type VivaMark } from './types';
 
 const KEY = 'sna_exam_state_v1';
 
@@ -13,6 +13,8 @@ const EMPTY: ExamState = {
   project: [],
   mock: null,
   quizSeen: [],
+  lastLab: null,
+  labsReviewed: [],
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -23,6 +25,9 @@ const isStringArray = (value: unknown): value is string[] =>
 
 const isNumberArray = (value: unknown): value is number[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'number');
+
+const isLabId = (value: unknown): value is LabId =>
+  typeof value === 'string' && (LAB_IDS as readonly string[]).includes(value);
 
 function sanitize(raw: unknown): ExamState {
   if (!isRecord(raw)) return { ...EMPTY };
@@ -52,6 +57,10 @@ function sanitize(raw: unknown): ExamState {
     project: isStringArray(raw.project) ? raw.project : [],
     mock,
     quizSeen: isNumberArray(raw.quizSeen) ? [...new Set(raw.quizSeen)] : [],
+    lastLab: isLabId(raw.lastLab) ? raw.lastLab : null,
+    labsReviewed: isStringArray(raw.labsReviewed)
+      ? [...new Set(raw.labsReviewed.filter(isLabId))]
+      : [],
   };
 }
 
@@ -82,7 +91,7 @@ function update(patch: Partial<ExamState>) {
   commit({ ...state, ...patch, v: 1 });
 }
 
-function toggle(list: string[], id: string): string[] {
+function toggle<T extends string>(list: T[], id: T): T[] {
   return list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
 }
 
@@ -140,6 +149,13 @@ export const examActions = {
   },
   toggleProject(id: string) {
     update({ project: toggle(state.project, id) });
+  },
+  markLabOpened(id: LabId) {
+    if (state.lastLab === id) return;
+    update({ lastLab: id });
+  },
+  toggleLabReviewed(id: LabId) {
+    update({ labsReviewed: toggle(state.labsReviewed, id) });
   },
   startMock(now = Date.now()) {
     update({ mock: { startedAt: now, endAt: now + 180 * 60 * 1000 } });

@@ -6,7 +6,7 @@ export function TerminalScreen() {
     <div>
       <PageHead
         title="The terminal."
-        lede="Rehearse the exact command sequence before you run it on the lab PC. Nothing here touches your machine, and every session stays on this device."
+        lede="Rehearse the exact command sequence before you run it on the lab PC. Nothing here touches your machine."
       />
       <TabTerminal />
     </div>

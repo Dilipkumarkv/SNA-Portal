@@ -11,7 +11,12 @@ export function PageHead({
 }) {
   return (
     <header className="mb-9 sm:mb-11">
-      <h1 className="max-w-[17ch] font-display text-display font-semibold text-ink">{title}</h1>
+      <h1
+        tabIndex={-1}
+        className="max-w-[17ch] font-display text-display font-semibold text-ink outline-none"
+      >
+        {title}
+      </h1>
       <p className="mt-4 max-w-[64ch] text-[1.0625rem] leading-relaxed text-ink-2">{lede}</p>
       {children ? <div className="mt-6 flex flex-wrap items-center gap-3">{children}</div> : null}
     </header>

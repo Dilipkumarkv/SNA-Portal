@@ -87,7 +87,7 @@ export function Sheet({ open, onClose, title, meta, children, footer, size = 'de
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-control border border-transparent text-ink-3 transition-colors hover:border-line hover:bg-sunken hover:text-ink"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-control border border-transparent text-ink-3 transition-colors hover:border-line hover:bg-sunken hover:text-ink"
             aria-label="Close"
           >
             <X size={19} aria-hidden="true" />

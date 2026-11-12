@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
+import { themeColorFor } from '../exam/pwa';
 
 type Theme = 'light' | 'dark';
 
@@ -35,6 +36,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove('dark');
     }
+    // Installed apps tint the status bar from these metas, so they follow the in-app toggle.
+    const color = themeColorFor(theme);
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute('content', color));
     try {
       localStorage.setItem('sna_theme', theme);
     } catch {
@@ -74,17 +78,11 @@ export function ThemeToggle({ className = '', size = 'md' }: { className?: strin
     lg: 20,
   };
 
-  const buttonPaddings = {
-    sm: 'p-2',
-    md: 'p-2.5',
-    lg: 'p-3',
-  };
-
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className={`relative inline-flex items-center justify-center rounded-control border border-line bg-raised text-ink-2 transition-colors hover:border-line-strong hover:bg-sunken hover:text-ink ${buttonPaddings[size]} ${className}`}
+      className={`relative inline-flex h-11 w-11 items-center justify-center rounded-control border border-line bg-raised text-ink-2 transition-colors hover:border-line-strong hover:bg-sunken hover:text-ink ${className}`}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >

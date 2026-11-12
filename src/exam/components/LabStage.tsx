@@ -1,4 +1,5 @@
-import type { ComponentType, ReactNode } from 'react';
+import { useState, type ComponentType, type ReactNode } from 'react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import type { LabId } from '../types';
 import type { Lab, LabPoint } from '../labs';
 
@@ -35,10 +36,10 @@ function PointDot({
       onClick={() => onSelect(n)}
       aria-label={`Point ${n}: ${name}`}
       aria-pressed={on}
-      className={`absolute z-10 grid h-5 w-5 place-items-center rounded-full border-2 font-mono text-[9px] font-bold shadow-[0_2px_6px_rgba(70,30,10,0.35)] transition-transform after:absolute after:-inset-2 after:content-[''] ${
+      className={`absolute z-10 grid h-5 w-5 place-items-center rounded-full border-2 font-mono text-[9px] font-bold shadow-[0_2px_6px_rgba(70,30,10,0.35)] transition-transform after:absolute after:-inset-3 after:content-[''] ${
         on
           ? 'scale-110 border-brand bg-white text-brand ring-2 ring-brand/25'
-          : 'border-white/95 bg-brand text-white'
+          : 'border-white/95 bg-brand text-on-brand'
       } ${className}`}
     >
       {n}
@@ -560,9 +561,35 @@ export function LabStage({
   onSelect: (n: number) => void;
 }) {
   const Screen = SCREENS[lab.id];
+  const [zoomed, setZoomed] = useState(false);
   return (
     <div>
-      <Screen active={active} onSelect={onSelect} points={lab.points} />
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-xs text-ink-3">Tap a number, or read the list below.</p>
+        <button
+          type="button"
+          onClick={() => setZoomed((value) => !value)}
+          aria-pressed={zoomed}
+          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control border border-line px-3 text-xs font-medium text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
+        >
+          {zoomed ? <ZoomOut size={15} aria-hidden="true" /> : <ZoomIn size={15} aria-hidden="true" />}
+          {zoomed ? 'Fit to width' : 'Magnify'}
+        </button>
+      </div>
+      <div
+        className={zoomed ? 'overflow-x-auto overscroll-x-contain rounded-[10px]' : undefined}
+        tabIndex={zoomed ? 0 : undefined}
+        aria-label={zoomed ? 'Magnified screen guide, scroll sideways to pan' : undefined}
+      >
+        <div style={zoomed ? { zoom: 1.4, minWidth: '420px' } : undefined}>
+          <Screen active={active} onSelect={onSelect} points={lab.points} />
+        </div>
+      </div>
+      {zoomed ? (
+        <p className="mt-1.5 text-xs text-ink-3">
+          Drag sideways to pan. The numbered list below holds the same detail.
+        </p>
+      ) : null}
       <p className="mt-1.5 text-[0.7rem] leading-snug text-ink-3">{lab.screenNote}</p>
 
       <div className="mt-3 overflow-hidden rounded-control border border-line bg-surface">

@@ -29,7 +29,7 @@ export function HotspotImage({
           type="button"
           onClick={() => onSelect(point.id)}
           aria-label={`Point ${point.n}: ${point.name}`}
-          className="group absolute grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full"
+          className="group absolute grid h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full"
           style={{ left: `${point.x}%`, top: `${point.y}%` }}
         >
           <span className="grid h-6 w-6 place-items-center rounded-full bg-brand font-mono text-[0.6875rem] font-semibold text-on-brand shadow-[0_1px_6px_rgba(0,0,0,0.45)] ring-2 ring-white/90 transition-transform group-hover:scale-110 group-focus-visible:scale-110">

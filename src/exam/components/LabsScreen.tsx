@@ -1,12 +1,13 @@
-import { useId, useState } from 'react';
-import { ArrowLeft, ArrowUpRight, ChevronDown, ChevronRight, TriangleAlert } from 'lucide-react';
+import { useEffect, useId, useState } from 'react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronRight, TriangleAlert } from 'lucide-react';
 import type { LabId, LabWeek } from '../types';
 import { LABS, LAB_WEEKS, labBySlug, labsForWeek, type Lab } from '../labs';
+import { examActions, useExamState } from '../store';
 import { PageHead, SectionHead } from './PageHead';
 import { RichText } from './RichText';
 import { AskBlock } from './AskBlock';
 import { LabStage, LabThumb } from './LabStage';
-import { BTN_QUIET, BTN_SECONDARY } from './ui';
+import { BTN_QUIET, BTN_PRIMARY, BTN_SECONDARY } from './ui';
 
 function FilterChip({
   active,
@@ -24,7 +25,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors ${
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold transition-colors ${
         active
           ? 'border-brand-ring bg-brand-soft text-brand-text'
           : 'border-line text-ink-2 hover:bg-sunken hover:text-ink'
@@ -36,7 +37,15 @@ function FilterChip({
   );
 }
 
-function LabIndexCard({ lab, onOpen }: { lab: Lab; onOpen: (lab: LabId) => void }) {
+function LabIndexCard({
+  lab,
+  reviewed,
+  onOpen,
+}: {
+  lab: Lab;
+  reviewed: boolean;
+  onOpen: (lab: LabId) => void;
+}) {
   return (
     <button
       type="button"
@@ -54,6 +63,11 @@ function LabIndexCard({ lab, onOpen }: { lab: Lab; onOpen: (lab: LabId) => void 
         <span className="mt-1 block text-[0.7rem] text-ink-3">
           {lab.tool} · {lab.steps.length} steps · {lab.minutes} min read
         </span>
+        {reviewed ? (
+          <span className="mt-1 inline-flex items-center gap-1 text-[0.7rem] font-semibold text-success">
+            <Check size={12} aria-hidden="true" /> Reviewed
+          </span>
+        ) : null}
       </span>
       <LabThumb label={lab.thumbLabel} />
       <ChevronRight
@@ -67,7 +81,10 @@ function LabIndexCard({ lab, onOpen }: { lab: Lab; onOpen: (lab: LabId) => void 
 
 function LabsIndex({ onOpenLab }: { onOpenLab: (lab: LabId) => void }) {
   const [week, setWeek] = useState<LabWeek | 'all'>('all');
+  const state = useExamState();
   const visibleWeeks = LAB_WEEKS.filter((meta) => week === 'all' || meta.week === week);
+  const resume = state.lastLab ? labBySlug(state.lastLab) : null;
+  const reviewed = new Set<LabId>(state.labsReviewed);
 
   return (
     <div>
@@ -76,9 +93,42 @@ function LabsIndex({ onOpenLab }: { onOpenLab: (lab: LabId) => void }) {
         lede="Seven experiments from weeks 5–7. Every card shows the screen you will meet — you do not need a computer at home."
       >
         <p className="text-sm text-ink-3">
-          <span className="font-semibold text-ink tnum">7</span> experiments · read-only revision
+          <span className="font-semibold text-ink tnum">{LABS.length}</span> experiments ·{' '}
+          <span className="font-semibold text-ink tnum">{reviewed.size}</span> reviewed
         </p>
       </PageHead>
+
+      {resume ? (
+        <section
+          aria-labelledby="resume-heading"
+          className="mb-6 rounded-card border border-brand-ring bg-brand-soft p-4"
+        >
+          <p
+            id="resume-heading"
+            className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-brand-text"
+          >
+            {reviewed.has(resume.id) ? 'Reviewed · revisit' : 'Pick up where you left off'}
+          </p>
+          <div className="mt-1.5 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-display text-[1.05rem] font-semibold text-ink">
+                {resume.number} · {resume.title}
+              </p>
+              <p className="mt-0.5 text-xs text-ink-2">
+                {reviewed.size} of {LABS.length} labs reviewed
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenLab(resume.id)}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control bg-brand px-3.5 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover"
+            >
+              {reviewed.has(resume.id) ? 'Revisit' : 'Resume'}
+              <ChevronRight size={15} aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by week">
         <FilterChip active={week === 'all'} onClick={() => setWeek('all')} label="All" count={LABS.length} />
@@ -111,7 +161,7 @@ function LabsIndex({ onOpenLab }: { onOpenLab: (lab: LabId) => void }) {
             <ul className="mt-2.5 space-y-2.5">
               {labs.map((lab) => (
                 <li key={lab.id}>
-                  <LabIndexCard lab={lab} onOpen={onOpenLab} />
+                  <LabIndexCard lab={lab} reviewed={reviewed.has(lab.id)} onOpen={onOpenLab} />
                 </li>
               ))}
             </ul>
@@ -120,18 +170,35 @@ function LabsIndex({ onOpenLab }: { onOpenLab: (lab: LabId) => void }) {
       })}
 
       <p className="mt-8 border-t border-line pt-4 text-sm leading-relaxed text-ink-3">
-        Read-only revision: no scores and no progress to track. The screens are drawn guides to the dialogs you will
-        meet — your lab machine may show a newer version.
+        Your place and reviewed marks stay on this device. No account, no scores. The screens are drawn guides to the
+        dialogs you will meet — your lab machine may show a newer version.
       </p>
     </div>
   );
 }
 
-function LabCard({ lab, onBack, onOpenDay }: { lab: Lab; onBack: () => void; onOpenDay: () => void }) {
+function LabCard({
+  lab,
+  onBack,
+  onOpenLab,
+  onOpenDay,
+}: {
+  lab: Lab;
+  onBack: () => void;
+  onOpenLab: (lab: LabId) => void;
+  onOpenDay: () => void;
+}) {
+  const state = useExamState();
+  const reviewed = state.labsReviewed.includes(lab.id);
+  const next = LABS[LABS.findIndex((item) => item.id === lab.id) + 1] ?? null;
   const [active, setActive] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const answerId = useId();
   const togglePoint = (n: number) => setActive((current) => (current === n ? null : n));
+
+  useEffect(() => {
+    examActions.markLabOpened(lab.id);
+  }, [lab.id]);
 
   return (
     <article>
@@ -149,7 +216,10 @@ function LabCard({ lab, onBack, onOpenDay }: { lab: Lab; onBack: () => void; onO
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-ink-3">
           <span className="font-mono text-brand-text">{lab.number}</span> · {lab.eyebrow}
         </p>
-        <h1 className="mt-1.5 max-w-[20ch] font-display text-[1.9rem] font-semibold leading-[1.05] tracking-[-0.035em] text-ink sm:text-[2.35rem]">
+        <h1
+          tabIndex={-1}
+          className="mt-1.5 max-w-[20ch] font-display text-[1.9rem] font-semibold leading-[1.05] tracking-[-0.035em] text-ink outline-none sm:text-[2.35rem]"
+        >
           {lab.title}.
         </h1>
         <p className="mt-2.5 max-w-[55ch] text-[0.98rem] leading-relaxed text-ink-2">{lab.aim}</p>
@@ -207,7 +277,7 @@ function LabCard({ lab, onBack, onOpenDay }: { lab: Lab; onBack: () => void; onO
             onClick={() => setRevealed((open) => !open)}
             aria-expanded={revealed}
             aria-controls={answerId}
-            className={`${BTN_SECONDARY} mt-3 min-h-9 px-3 text-xs`}
+            className={`${BTN_SECONDARY} mt-3 px-3.5 text-xs`}
           >
             {revealed ? 'Hide answer' : 'Show answer'}
             <ChevronDown
@@ -229,16 +299,49 @@ function LabCard({ lab, onBack, onOpenDay }: { lab: Lab; onBack: () => void; onO
           <AskBlock ask={lab.ask} />
         </div>
 
-        <div className="mt-8 border-t border-line pt-4">
+        <div className="mt-6 rounded-card border border-line bg-surface p-4">
+          <button
+            type="button"
+            onClick={() => examActions.toggleLabReviewed(lab.id)}
+            aria-pressed={reviewed}
+            className={`w-full ${reviewed ? BTN_SECONDARY : BTN_PRIMARY}`}
+          >
+            {reviewed ? (
+              <>
+                <Check size={16} aria-hidden="true" /> Reviewed — tap to undo
+              </>
+            ) : (
+              'Mark as reviewed'
+            )}
+          </button>
+          <p className="mt-2 text-center text-xs text-ink-3">Saved on this device. No account needed.</p>
+        </div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
           <button
             type="button"
             onClick={onOpenDay}
-            className="group flex min-h-9 items-center gap-1.5 text-sm text-ink-2"
+            className="group flex min-h-11 items-center gap-1.5 text-sm text-ink-2"
           >
             Used on exam day:
             <span className="font-medium text-brand-text group-hover:underline">{lab.examLabel}</span>
             <ArrowUpRight size={14} className="text-brand-text" aria-hidden="true" />
           </button>
+          {next ? (
+            <button
+              type="button"
+              onClick={() => onOpenLab(next.id)}
+              className={`${BTN_SECONDARY} max-w-full`}
+            >
+              <span className="truncate">Next: {next.title}</span>
+              <ArrowRight size={15} aria-hidden="true" />
+            </button>
+          ) : (
+            <button type="button" onClick={onBack} className={BTN_SECONDARY}>
+              Back to the lab index
+              <ArrowRight size={15} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </section>
     </article>
@@ -257,7 +360,15 @@ export function LabsScreen({
   const current = lab ? labBySlug(lab) : null;
 
   if (current) {
-    return <LabCard key={current.id} lab={current} onBack={() => onOpenLab(null)} onOpenDay={onOpenDay} />;
+    return (
+      <LabCard
+        key={current.id}
+        lab={current}
+        onBack={() => onOpenLab(null)}
+        onOpenLab={onOpenLab}
+        onOpenDay={onOpenDay}
+      />
+    );
   }
 
   return <LabsIndex onOpenLab={onOpenLab} />;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, KeyboardEvent, FormEvent } from 'react';
-import { LabContext, TerminalEntry, ShellMode, getShellBanner, executeCommand, saveLabState, getTerminalColors, generateTerminalEntryId } from './TerminalEngine';
-import { ChevronLeft, ChevronRight, Terminal, RotateCcw, X, Maximize2, Minimize2, HelpCircle, ChevronDown, ChevronUp, Copy, Check, AlertTriangle, Zap, Database } from 'lucide-react';
+import React, { useState, useEffect, useRef, KeyboardEvent, FormEvent } from 'react';
+import { TerminalEntry, ShellMode, getTerminalColors } from './TerminalEngine';
+import { ChevronLeft, ChevronRight, Terminal, ChevronDown, Copy, Check, AlertTriangle, Zap, Database } from 'lucide-react';
 
 const MAX_ENTRIES = 300;
 
@@ -39,11 +39,18 @@ export function TerminalScreen({
 }: TerminalScreenProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typed = useRef(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    scrollAreaRef.current?.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-    inputRef.current?.focus();
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    scrollAreaRef.current?.scrollTo({
+      top: scrollAreaRef.current.scrollHeight,
+      behavior: reduce ? 'auto' : 'smooth',
+    });
+    // On phones, focusing on mount would open the keyboard before the student picks a scenario.
+    const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
+    if (!coarsePointer || typed.current) inputRef.current?.focus();
   }, [entries, switchCount]);
 
   const handleCopy = async (text: string, id: string) => {
@@ -52,25 +59,30 @@ export function TerminalScreen({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const lastEntry = entries[entries.length - 1];
+  const announcement = lastEntry
+    ? lastEntry.type === 'input'
+      ? `Ran ${lastEntry.commandText ?? ''}`
+      : lastEntry.output ?? ''
+    : '';
+
   return (
     <div
       id="terminal-scroll-area"
       ref={scrollAreaRef}
-      className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 relative"
+      className="relative flex-1 overflow-y-auto overflow-x-hidden p-4 text-[0.875rem] leading-[1.5rem] sm:p-6 sm:text-[0.9375rem]"
       style={{
         backgroundColor: terminalColors.bg,
         color: terminalColors.fg,
         fontFamily: '"JetBrains Mono", "Fira Code", "Consolas", monospace',
-        fontSize: '13px',
-        lineHeight: '1.6',
       }}
     >
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
       {entries.map((entry) => (
-        <div
-          key={entry.id}
-          className="relative group"
-        >
-          <div className="flex gap-3" style={{ minHeight: '22px' }}>
+        <div key={entry.id} className="group relative">
+          <div className="flex gap-2.5 sm:gap-3" style={{ minHeight: '1.5rem' }}>
             {(entry.type === 'input' || entry.type === 'output' || entry.type === 'error') && entry.prompt && (
               <span
                 className="shrink-0 select-none whitespace-nowrap"
@@ -79,7 +91,7 @@ export function TerminalScreen({
                 {entry.prompt}
               </span>
             )}
-            <div className="flex-1 min-w-0 break-words" style={{ wordBreak: 'break-word' }}>
+            <div className="min-w-0 flex-1 break-words" style={{ wordBreak: 'break-word' }}>
               {entry.type === 'input' && (
                 <span className="whitespace-pre-wrap" style={{ color: terminalColors.fg }}>
                   {entry.commandText}
@@ -103,12 +115,12 @@ export function TerminalScreen({
             </div>
             {(entry.type === 'output' || entry.type === 'error') && (
               <button
-                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-white/5"
+                type="button"
+                className="-my-1 grid h-8 w-8 shrink-0 place-items-center rounded text-white/45 transition-colors hover:bg-white/10 hover:text-white focus-visible:text-white"
                 onClick={() => handleCopy(entry.output || '', entry.id)}
-                aria-label="Copy output"
-                style={{ fontSize: '11px' }}
+                aria-label={entry.type === 'error' ? 'Copy error output' : 'Copy output'}
               >
-                {copiedId === entry.id ? <Check size={12} style={{ color: '#00ff00' }} /> : <Copy size={12} />}
+                {copiedId === entry.id ? <Check size={13} style={{ color: '#4ade80' }} /> : <Copy size={13} />}
               </button>
             )}
           </div>
@@ -116,32 +128,36 @@ export function TerminalScreen({
       ))}
 
       {/* Active Input Line */}
-      <div className="flex gap-3" style={{ minHeight: '22px' }}>
+      <div className="flex gap-2.5 sm:gap-3" style={{ minHeight: '1.5rem' }}>
         <span className="shrink-0 select-none whitespace-nowrap" style={{ color: terminalColors.prompt, userSelect: 'none' }}>
           {currentPrompt}
         </span>
-        <form onSubmit={onSubmit} className="flex-1">
+        <form onSubmit={onSubmit} className="min-w-0 flex-1">
           <input
             ref={inputRef}
             id="terminal-input"
             type="text"
             value={inputValue}
-            onChange={(e) => onChangeInput(e.target.value)}
+            onChange={(e) => {
+              typed.current = true;
+              onChangeInput(e.target.value);
+            }}
             onKeyDown={onKeyDown}
-            className="w-full bg-transparent border-none outline-none font-mono"
+            className="w-full border-none bg-transparent font-mono text-[1rem] leading-[1.5rem] outline-none lg:text-[0.9375rem]"
             style={{
               color: terminalColors.fg,
-              fontSize: '13px',
-              lineHeight: '1.6',
               fontFamily: 'inherit',
               caretColor: terminalColors.prompt,
             }}
             autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
             spellCheck={false}
+            enterKeyHint="send"
             aria-label="Terminal command input"
           />
         </form>
-        <span className="shrink-0" style={{ color: terminalColors.prompt, animation: 'blink 1s infinite' }}>
+        <span className="terminal-cursor shrink-0" style={{ color: terminalColors.prompt }}>
           █
         </span>
       </div>
@@ -150,6 +166,10 @@ export function TerminalScreen({
         @keyframes blink {
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
+        }
+        .terminal-cursor { animation: blink 1s steps(1) infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .terminal-cursor { animation: none; }
         }
       `}</style>
     </div>
@@ -162,8 +182,6 @@ interface ShellHeaderProps {
   onScenarioSelect: (scenarioId: string) => void;
   scenarios: CLScenario[];
   selectedScenario: string | null;
-  onOpenReset: () => void;
-  toastMessage: string | null;
   onHistoryPrev: () => void;
   onHistoryNext: () => void;
   canHistoryPrev: boolean;
@@ -289,20 +307,11 @@ export function ShellHeader({
   onScenarioSelect,
   scenarios = SCENARIOS,
   selectedScenario,
-  onOpenReset,
-  toastMessage,
   onHistoryPrev,
   onHistoryNext,
   canHistoryPrev,
   canHistoryNext,
 }: ShellHeaderProps) {
-  const [showScenarios, setShowScenarios] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<CLScenario['category'] | 'all'>('all');
-
-  const filteredScenarios = scenarios.filter(s => 
-    activeCategory === 'all' || s.category === activeCategory
-  );
-
   const quickCommands = [
     { cmd: 'cls', label: 'Clear', shell: ['cmd', 'ps'] },
     { cmd: 'clear', label: 'Clear', shell: ['bash'] },
@@ -317,91 +326,85 @@ export function ShellHeader({
     { cmd: 'Get-Service', label: 'Services', shell: ['ps'] },
   ].filter(c => c.shell.includes('all') || c.shell.includes(shellMode));
 
+  const weekGroups = [...new Set(scenarios.map((s) => s.week))]
+    .sort((a, b) => a - b)
+    .map((week) => ({ week, items: scenarios.filter((s) => s.week === week) }));
+
   return (
-    <div className="border-b border-white/10 bg-white/5 backdrop-blur-sm sticky top-0 z-20">
-      {/* Scenario Selector */}
-      <div className="p-3 sm:p-4 border-b border-white/5">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="relative flex-1">
-            <button
-              onClick={() => setShowScenarios(!showScenarios)}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-left text-sm font-mono text-white/80 hover:bg-white/10 transition-colors flex items-center justify-between"
-            >
-              <span>{selectedScenario ? scenarios.find(s => s.id === selectedScenario)?.title || 'Select Scenario' : 'Select Lab Scenario'}</span>
-              <ChevronDown size={16} className={showScenarios ? 'rotate-180' : ''} />
-            </button>
-            {showScenarios && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-black/95 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
-                <div className="p-2 border-b border-white/10 flex gap-1 overflow-x-auto">
-                  {['all', 'navigation', 'filesystem', 'network', 'powershell', 'diskpart', 'system'].map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat as any)}
-                      className={`px-3 py-1 text-xs rounded whitespace-nowrap transition-colors ${activeCategory === cat ? 'bg-[#b03a17] text-white' : 'text-white/70 hover:bg-white/10'}`}
-                    >
-                      {cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </button>
-                  ))}
-                </div>
-                <div className="max-h-64 overflow-y-auto p-2">
-                  {filteredScenarios.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => { onScenarioSelect(s.id); setShowScenarios(false); }}
-                      className={`w-full px-3 py-2 text-left rounded transition-colors ${selectedScenario === s.id ? 'bg-[#b03a17]/60' : 'hover:bg-white/5'}`}
-                    >
-                      <span className="inline-block text-xs px-1.5 py-0.5 bg-white/10 rounded">{s.category}</span>
-                      <p className="text-sm font-medium">{s.title}</p>
-                      <p className="text-xs text-white/50 mt-0.5">{s.description}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+    <div className="sticky top-0 z-20 border-b border-white/10 bg-[#0d0d0d]/95 backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-white/5 p-3 sm:p-4">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Lab scenario</span>
+          <select
+            value={selectedScenario ?? ''}
+            onChange={(event) => {
+              if (event.target.value) onScenarioSelect(event.target.value);
+            }}
+            className="h-11 w-full rounded-lg border border-white/15 bg-[#1c1c1c] px-2.5 text-sm text-white/90 outline-none transition-colors focus-visible:border-[#ec7a45]"
+          >
+            <option value="">Lab scenario</option>
+            {weekGroups.map((group) => (
+              <optgroup key={group.week} label={`Week ${group.week}`}>
+                {group.items.map((scenario) => (
+                  <option key={scenario.id} value={scenario.id}>
+                    {scenario.title}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <div className="flex shrink-0 items-center gap-1.5" role="group" aria-label="Command history">
+          <button
+            type="button"
+            onClick={onHistoryPrev}
+            disabled={!canHistoryPrev}
+            className="inline-flex h-11 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+            aria-label="Previous command"
+          >
+            <ChevronLeft size={16} />
+            <span className="hidden sm:inline">Prev</span>
+          </button>
+          <button
+            type="button"
+            onClick={onHistoryNext}
+            disabled={!canHistoryNext}
+            className="inline-flex h-11 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+            aria-label="Next command"
+          >
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
 
-      {/* Quick Command Chips */}
-      <div className="no-scrollbar px-3 pb-3 sm:px-4 overflow-x-auto">
-        <div className="flex gap-2 min-w-max" role="toolbar" aria-label="Quick commands">
+      <details className="group/quick border-b border-white/5">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 text-xs font-medium text-white/65 transition-colors hover:text-white sm:px-4 [&::-webkit-details-marker]:hidden">
+          <ChevronDown
+            size={15}
+            className="transition-transform group-open/quick:rotate-180"
+            aria-hidden="true"
+          />
+          Quick commands
+          <span className="text-white/35">· {quickCommands.length} ready to run</span>
+        </summary>
+        <div className="flex flex-wrap gap-2 px-3 pb-3 sm:px-4">
           {quickCommands.map((qc) => (
             <button
               key={qc.cmd}
-              onClick={() => onQuickCommand(qc.cmd)}
-              className="shrink-0 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-white/80 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+              type="button"
+              onClick={(event) => {
+                event.currentTarget.closest('details')?.removeAttribute('open');
+                onQuickCommand(qc.cmd);
+              }}
+              className="inline-flex min-h-11 items-center rounded-lg border border-white/10 bg-white/5 px-3.5 font-mono text-xs text-white/80 transition-colors hover:bg-white/10 hover:text-white"
             >
               {qc.label}
             </button>
           ))}
         </div>
-      </div>
+      </details>
 
-      {/* History Stepper */}
-      <div className="px-3 pb-3 sm:px-4 border-b border-white/5 flex items-center gap-2">
-        <button
-          onClick={onHistoryPrev}
-          disabled={!canHistoryPrev}
-          className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-white/80 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
-        >
-          <ChevronLeft size={12} /> Prev
-        </button>
-        <button
-          onClick={onHistoryNext}
-          disabled={!canHistoryNext}
-          className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-white/80 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
-        >
-          Next <ChevronRight size={12} />
-        </button>
-        <span className="text-xs text-white/40 ml-auto">History</span>
-      </div>
-
-      {/* Toast */}
-      {toastMessage && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-[#b03a17] text-white text-sm rounded-lg shadow-lg animate-slide-up">
-          {toastMessage}
-        </div>
-      )}
     </div>
   );
 }
@@ -412,20 +415,31 @@ interface ShellBottomBarProps {
 }
 
 export function ShellBottomBar({ shellMode, onSwitchMode }: ShellBottomBarProps) {
-  const modes: { mode: ShellMode; label: string; icon: React.ReactNode }[] = [
+  const modes: { mode: ShellMode; label: React.ReactNode; icon: React.ReactNode }[] = [
     { mode: 'cmd', label: 'CMD', icon: <Terminal size={16} /> },
-    { mode: 'ps', label: 'PowerShell', icon: <Zap size={16} /> },
+    {
+      mode: 'ps',
+      label: (
+        <>
+          <span className="sm:hidden">PS</span>
+          <span className="hidden sm:inline">PowerShell</span>
+        </>
+      ),
+      icon: <Zap size={16} />,
+    },
     { mode: 'bash', label: 'Bash', icon: <Database size={16} /> },
   ];
 
   return (
-    <div className="border-t border-white/10 bg-white/5 backdrop-blur-sm p-2 sm:p-3">
-      <div className="flex items-center justify-center gap-2 sm:gap-4">
+    <div className="border-t border-white/10 bg-white/5 p-2 backdrop-blur-sm sm:p-3">
+      <div className="flex items-center justify-center gap-2 sm:gap-3" role="group" aria-label="Shell mode">
         {modes.map(m => (
           <button
             key={m.mode}
+            type="button"
             onClick={() => onSwitchMode(m.mode)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all min-w-[100px] justify-center ${
+            aria-pressed={shellMode === m.mode}
+            className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors sm:max-w-[180px] sm:gap-2 sm:px-4 sm:text-sm ${
               shellMode === m.mode
                 ? 'bg-[#b03a17] text-white shadow-lg shadow-black/30'
                 : 'text-white/70 hover:bg-white/10 hover:text-white'
@@ -473,47 +487,11 @@ export function OfflineIndicator({}: OfflineIndicatorProps) {
         }
         .animate-slide-in { animation: slide-in 0.3s ease-out; }
         @keyframes slide-up {
-          from { transform: translate(-50%, 100%); opacity: 0; }
-          to { transform: translate(-50%, 0); opacity: 1; }
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
         .animate-slide-up { animation: slide-up 0.3s ease-out; }
       `}</style>
-    </div>
-  );
-}
-
-interface ResetModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-}
-
-export function ResetModal({ isOpen, onClose, onConfirm }: ResetModalProps) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-white/10 rounded-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-bold text-white mb-2">Reset Lab Environment</h3>
-        <p className="text-white/70 text-sm mb-6">
-          This will wipe the virtual file system and return all drives to the clean baseline.
-          Your command history will also be cleared.
-        </p>
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-          >
-            <RotateCcw size={14} /> Reset Lab
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

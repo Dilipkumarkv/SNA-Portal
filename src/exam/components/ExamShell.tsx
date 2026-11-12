@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { BookOpen, Clock3, FolderKanban, Monitor, SquareTerminal, CloudOff } from 'lucide-react';
 import { ThemeToggle } from '../../context/ThemeContext';
 import type { ExamTab } from '../types';
+import { PwaPrompts } from './PwaPrompts';
 
 const NAV: { id: ExamTab; label: string; icon: typeof Monitor }[] = [
   { id: 'machine', label: 'Machine', icon: Monitor },
@@ -79,6 +80,16 @@ export function ExamShell({
 
   return (
     <div className="min-h-[100dvh] bg-canvas text-ink">
+      <a
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('main-content')?.focus();
+        }}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-brand focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-on-brand"
+      >
+        Skip to content
+      </a>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col border-r border-line bg-surface lg:flex">
         <div className="px-6 pb-6 pt-8">
           <Wordmark />
@@ -132,7 +143,7 @@ export function ExamShell({
         </div>
       </header>
 
-      <main className="lg:pl-[248px]">
+      <main id="main-content" tabIndex={-1} className="outline-none lg:pl-[248px]">
         <div
           className={`safe-x mx-auto w-full pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-7 lg:pb-20 lg:pt-12 ${
             wide ? 'max-w-6xl' : 'max-w-3xl'
@@ -145,6 +156,7 @@ export function ExamShell({
       <nav
         className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface lg:hidden"
         aria-label="Exam sections"
+        data-mobile-nav
       >
         <div className="mx-auto grid h-[4.25rem] w-full max-w-lg grid-cols-5 px-1">
           {NAV.map((item) => {
@@ -171,6 +183,8 @@ export function ExamShell({
           })}
         </div>
       </nav>
+
+      <PwaPrompts />
     </div>
   );
 }

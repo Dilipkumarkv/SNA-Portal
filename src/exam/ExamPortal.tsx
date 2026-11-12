@@ -12,6 +12,8 @@ export function ExamPortal() {
   const [route, setRoute] = useState<ExamRoute>(() => parseExamHash(window.location.hash));
   const lastTab = useRef(route.tab);
   const lastLab = useRef(route.lab);
+  const routeKey = `${route.tab}|${route.lab ?? ''}`;
+  const lastRouteKey = useRef(routeKey);
 
   useEffect(() => {
     const sync = () => setRoute(parseExamHash(window.location.hash));
@@ -32,6 +34,15 @@ export function ExamPortal() {
       lastLab.current = route.lab;
     }
   }, [route.lab]);
+
+  useEffect(() => {
+    const heading = document.querySelector<HTMLElement>('#main-content h1');
+    const name = heading?.textContent?.trim().replace(/\.$/, '');
+    document.title = `${name || 'Practical exam guide'} · SNA 25CS34I`;
+    if (lastRouteKey.current === routeKey) return;
+    lastRouteKey.current = routeKey;
+    heading?.focus({ preventScroll: true });
+  }, [routeKey]);
 
   const navigate = useCallback((tab: ExamTab, view: MachineViewId | null = null, replace = false) => {
     const hash = examHash(tab, view);
@@ -75,7 +86,14 @@ export function ExamPortal() {
             onOpenDay={() => navigate('day')}
           />
         ) : null}
-        {route.tab === 'project' ? <ProjectScreen /> : null}
+        {route.tab === 'project' ? (
+          <ProjectScreen
+            onOpenMachine={(view) => navigate('machine', view)}
+            onOpenLab={openLab}
+            onOpenDay={() => navigate('day')}
+            onOpenTerminal={() => navigate('terminal')}
+          />
+        ) : null}
         {route.tab === 'terminal' ? <TerminalScreen /> : null}
       </div>
     </ExamShell>

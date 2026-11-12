@@ -1,16 +1,15 @@
 import { useState, useEffect, useCallback, useRef, KeyboardEvent, FormEvent } from 'react';
-import { Card } from '../Card';
+import { createPortal } from 'react-dom';
 import { LabContext, TerminalEntry, ShellMode, executeCommand, saveLabState, clearLabState, loadLabState, getShellBanner, getTerminalColors, generateTerminalEntryId, VirtualFileSystem } from '../terminal/TerminalEngine';
 import { 
   TerminalScreen, 
   ShellHeader, 
   ShellBottomBar, 
   OfflineIndicator, 
-  ResetModal, 
-  CLScenario,
   SCENARIOS 
 } from '../terminal/TerminalComponents';
-import { ChevronLeft, ChevronRight, Terminal, RotateCcw, X, Maximize2, Minimize2, HelpCircle, ChevronDown, ChevronUp, Copy, Check, AlertTriangle, Zap, Database, Download, Upload, Trash2, Settings, RefreshCw } from 'lucide-react';
+import { Sheet } from '../../exam/components/Sheet';
+import { Database, RotateCcw, Copy, Download, Trash2 } from 'lucide-react';
 
 const MAX_ENTRIES = 300;
 
@@ -54,11 +53,11 @@ export function TabTerminal() {
 
   const [showSessionManager, setShowSessionManager] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [viewportHeight, setViewportHeight] = useState(0);
+  const [terminalHeight, setTerminalHeight] = useState<number | null>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
-  const [showScenarios, setShowScenarios] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<CLScenario['category'] | 'all'>('all');
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [resetArmed, setResetArmed] = useState(false);
 
   // Active session derived state
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0] || null;
@@ -85,24 +84,33 @@ export function TabTerminal() {
     }
   }, []);
 
-  // Viewport tracking for mobile keyboard
+  // Size the terminal to the space above the fixed mobile nav, including while the keyboard is open.
   useEffect(() => {
+    let alive = true;
     const updateViewport = () => {
+      if (!alive) return;
+      const height = Math.round(window.visualViewport?.height ?? window.innerHeight);
+      const navHeight =
+        document.querySelector<HTMLElement>('[data-mobile-nav]')?.getBoundingClientRect().height ?? 0;
+      const top = terminalRef.current?.getBoundingClientRect().top ?? 0;
+      if (top > 0) setTerminalHeight(Math.max(300, height - top - navHeight - 12));
       if (window.visualViewport) {
-        setViewportHeight(Math.round(window.visualViewport.height));
         if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
-      } else {
-        setViewportHeight(window.innerHeight);
       }
       const scrollArea = document.getElementById('terminal-scroll-area');
-      scrollArea?.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' });
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      scrollArea?.scrollTo({ top: scrollArea.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
     };
     updateViewport();
+    const frame = requestAnimationFrame(updateViewport);
+    void document.fonts?.ready.then(updateViewport);
     window.visualViewport?.addEventListener('resize', updateViewport);
     window.visualViewport?.addEventListener('scroll', updateViewport);
     window.addEventListener('resize', updateViewport);
     window.addEventListener('orientationchange', updateViewport);
     return () => {
+      alive = false;
+      cancelAnimationFrame(frame);
       window.visualViewport?.removeEventListener('resize', updateViewport);
       window.visualViewport?.removeEventListener('scroll', updateViewport);
       window.removeEventListener('resize', updateViewport);
@@ -129,12 +137,18 @@ export function TabTerminal() {
 
   useEffect(() => { if (activeSessionId) persistSession(); }, [persistSession]);
 
+  // Dismiss transient feedback so it does not linger over the terminal
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 2600);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
   // Scenario handling
   const handleScenarioSelect = useCallback((scenarioId: string) => {
     const scenario = SCENARIOS.find(s => s.id === scenarioId);
     if (!scenario) return;
     setSelectedScenario(scenarioId);
-    setShowScenarios(false);
     setToastMessage(`Loaded: ${scenario.title}`);
     
     // Pre-populate first command
@@ -329,7 +343,8 @@ export function TabTerminal() {
   };
 
   const handleResetLab = () => {
-    setIsResetModalOpen(false);
+    setShowSessionManager(false);
+    setResetArmed(false);
     clearLabState();
     const newContext = createDefaultLabContext();
     labContext.vfs = newContext.vfs;
@@ -352,14 +367,15 @@ export function TabTerminal() {
     setToastMessage('Lab reset complete');
   };
 
-  const exportSession = () => {
-    if (!activeSession) return;
-    const data = JSON.stringify(activeSession, null, 2);
+  const exportSession = (id: string) => {
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
+    const data = JSON.stringify(session, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${activeSession.name.replace(/\s+/g, '-')}-${Date.now()}.json`;
+    a.download = `${session.name.replace(/\s+/g, '-')}-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setToastMessage('Session exported');
@@ -399,32 +415,30 @@ export function TabTerminal() {
     : [{ id: `init-header-${shellMode}`, type: 'output' as const, shell: shellMode, output: getShellBanner(shellMode), timestamp: Date.now() }, ...activeEntries];
 
   // Scenario category filter
-  const filteredScenarios = SCENARIOS.filter(s => activeCategory === 'all' || s.category === activeCategory);
-
   return (
     <div className="space-y-6">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-sm text-ink-2">
-          Commands from exam day work here. Nothing runs on your real computer.
+        <p className="min-w-0 truncate text-sm text-ink-2">
+          {activeSession ? activeSession.name : 'No session'}
+          <span className="text-ink-3"> · saved on this device</span>
         </p>
         <button
+          type="button"
           onClick={() => setShowSessionManager(true)}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-control border border-line text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
-          title="Session manager"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-control border border-line text-ink-2 transition-colors hover:border-line-strong hover:text-ink"
           aria-label="Open session manager"
         >
-          <Database size={17} />
+          <Database size={18} aria-hidden="true" />
         </button>
       </div>
 
       {/* Terminal Container */}
       <div
+        ref={terminalRef}
         className="relative"
         style={{
-          height: viewportHeight
-            ? Math.max(320, viewportHeight - (window.innerWidth >= 1024 ? 300 : 400))
-            : 'calc(100dvh - 25rem)',
-          minHeight: '320px',
+          height: terminalHeight ?? 'calc(100dvh - 22.5rem)',
+          minHeight: '300px',
         }}
       >
         <div
@@ -438,8 +452,6 @@ export function TabTerminal() {
             onScenarioSelect={handleScenarioSelect}
             scenarios={SCENARIOS}
             selectedScenario={selectedScenario}
-            onOpenReset={() => setIsResetModalOpen(true)}
-            toastMessage={toastMessage}
             onHistoryPrev={handleHistoryPrev}
             onHistoryNext={handleHistoryNext}
             canHistoryPrev={commandHistory.length > 0 && historyPointer !== 0}
@@ -466,67 +478,173 @@ export function TabTerminal() {
         </div>
       </div>
 
-      {/* Session Manager Modal */}
-      {showSessionManager && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="max-h-[80vh] w-full max-w-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line p-4">
-              <h3 className="font-display text-base font-semibold text-ink">Sessions</h3>
+      <Sheet
+        open={showSessionManager}
+        onClose={() => {
+          setShowSessionManager(false);
+          setPendingDelete(null);
+          setResetArmed(false);
+        }}
+        title="Sessions"
+        meta={<span>Saved on this device</span>}
+        footer={
+          resetArmed ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="min-w-0 flex-1 text-xs leading-snug text-ink-2">
+                Reset wipes the virtual file system and this session's command history.
+              </p>
               <button
-                onClick={() => setShowSessionManager(false)}
-                className="grid h-9 w-9 place-items-center rounded-control text-ink-3 transition-colors hover:bg-sunken hover:text-ink"
-                aria-label="Close session manager"
+                type="button"
+                onClick={() => setResetArmed(false)}
+                className="min-h-11 rounded-control px-3 text-sm font-medium text-ink-2 hover:bg-sunken"
               >
-                <X size={19} />
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetLab}
+                className="min-h-11 rounded-control bg-danger px-3 text-sm font-semibold text-canvas"
+              >
+                Reset lab
               </button>
             </div>
-            <div className="p-4">
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-ink-3">Sessions stay in this browser.</p>
               <button
-                onClick={createNewSession}
-                className="mb-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-hover"
+                type="button"
+                onClick={() => setResetArmed(true)}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-sm font-medium text-ink-2 hover:bg-sunken hover:text-ink"
               >
-                <Database size={17} /> New session
+                <RotateCcw size={15} aria-hidden="true" /> Reset lab…
               </button>
-              <div className="max-h-64 space-y-2 overflow-y-auto">
-                {sessions.map(s => (
-                  <div
-                    key={s.id}
-                    className={`flex items-center justify-between gap-3 rounded-control border p-3 ${
-                      activeSessionId === s.id ? 'border-brand/40 bg-brand-soft' : 'border-line hover:bg-sunken'
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1" onClick={() => switchSession(s.id)}>
-                      <p className="truncate text-sm font-medium text-ink">{s.name}</p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-3">
-                        <span className="rounded bg-sunken px-1.5 py-0.5 font-semibold text-ink-2">{s.shellMode.toUpperCase()}</span>
-                        <span>{new Date(s.updatedAt).toLocaleString()}</span>
-                        {s.scenarioId && <span className="rounded bg-success-soft px-1.5 py-0.5 font-semibold text-success">{s.scenarioId}</span>}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button onClick={() => duplicateSession(s.id)} className="grid h-8 w-8 place-items-center rounded-control text-ink-3 hover:bg-surface hover:text-ink" title="Duplicate" aria-label={`Duplicate ${s.name}`}><Copy size={14} /></button>
-                      <button onClick={() => exportSession()} className="grid h-8 w-8 place-items-center rounded-control text-ink-3 hover:bg-surface hover:text-ink" title="Export" aria-label={`Export ${s.name}`}><Download size={14} /></button>
-                      <button onClick={() => deleteSession(s.id)} className="grid h-8 w-8 place-items-center rounded-control text-ink-3 hover:bg-danger-soft hover:text-danger" title="Delete" aria-label={`Delete ${s.name}`}><Trash2 size={14} /></button>
-                    </div>
+            </div>
+          )
+        }
+      >
+        <button
+          type="button"
+          onClick={() => {
+            createNewSession();
+            setShowSessionManager(false);
+          }}
+          className="mb-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-hover"
+        >
+          <Database size={17} aria-hidden="true" /> New session
+        </button>
+        <div className="space-y-2">
+          {sessions.map((s) => {
+            const isActive = activeSessionId === s.id;
+            return (
+              <div
+                key={s.id}
+                className={`flex items-center justify-between gap-2 rounded-control border p-2 ${
+                  isActive ? 'border-brand-ring bg-brand-soft' : 'border-line'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchSession(s.id);
+                    setShowSessionManager(false);
+                  }}
+                  aria-current={isActive ? 'true' : undefined}
+                  className="min-h-11 min-w-0 flex-1 rounded-control px-2 py-1.5 text-left hover:bg-surface/60"
+                >
+                  <span className="block truncate text-sm font-medium text-ink">{s.name}</span>
+                  <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-3">
+                    <span className="rounded bg-sunken px-1.5 py-0.5 font-semibold text-ink-2">
+                      {s.shellMode.toUpperCase()}
+                    </span>
+                    <span>{new Date(s.updatedAt).toLocaleDateString()}</span>
+                    {s.scenarioId ? (
+                      <span className="rounded bg-success-soft px-1.5 py-0.5 font-semibold text-success">
+                        {s.scenarioId}
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+                {pendingDelete === s.id ? (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteSession(s.id);
+                        setPendingDelete(null);
+                      }}
+                      className="min-h-11 rounded-control bg-danger-soft px-2.5 text-xs font-semibold text-danger"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(null)}
+                      className="min-h-11 rounded-control px-2.5 text-xs font-medium text-ink-2 hover:bg-surface"
+                    >
+                      Keep
+                    </button>
                   </div>
-                ))}
-                {sessions.length === 0 && <p className="py-8 text-center text-sm text-ink-3">No sessions yet. Create one to start.</p>}
+                ) : (
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => duplicateSession(s.id)}
+                      className="grid h-11 w-11 place-items-center rounded-control text-ink-3 hover:bg-surface hover:text-ink"
+                      aria-label={`Duplicate ${s.name}`}
+                    >
+                      <Copy size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => exportSession(s.id)}
+                      className="grid h-11 w-11 place-items-center rounded-control text-ink-3 hover:bg-surface hover:text-ink"
+                      aria-label={`Export ${s.name}`}
+                    >
+                      <Download size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(s.id)}
+                      className="grid h-11 w-11 place-items-center rounded-control text-ink-3 hover:bg-danger-soft hover:text-danger"
+                      aria-label={`Delete ${s.name}`}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="mt-4 border-t border-line pt-4">
-                <label className="mb-2 block text-sm font-medium text-ink">Import a session file</label>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={(e) => e.target.files?.[0] && importSession(e.target.files[0])}
-                  className="w-full rounded-control border border-line bg-canvas p-2 text-sm text-ink-2"
-                />
-              </div>
-            </div>
-          </Card>
+            );
+          })}
+          {sessions.length === 0 && (
+            <p className="py-8 text-center text-sm text-ink-3">No sessions yet. Create one to start.</p>
+          )}
         </div>
-      )}
+        <div className="mt-5 border-t border-line pt-4">
+          <label htmlFor="session-import" className="mb-2 block text-sm font-medium text-ink">
+            Import a session file
+          </label>
+          <input
+            id="session-import"
+            type="file"
+            accept=".json"
+            onChange={(e) => e.target.files?.[0] && importSession(e.target.files[0])}
+            className="w-full rounded-control border border-line bg-canvas p-2 text-sm text-ink-2"
+          />
+        </div>
+      </Sheet>
 
-      <ResetModal isOpen={isResetModalOpen} onClose={() => setIsResetModalOpen(false)} onConfirm={handleResetLab} />
+      {toastMessage &&
+        createPortal(
+          <div
+            role="status"
+            aria-live="polite"
+            className="animate-slide-up fixed inset-x-0 bottom-24 z-50 mx-auto w-fit rounded-lg bg-[#b03a17] px-4 py-2 text-sm text-white shadow-lg"
+          >
+            {toastMessage}
+          </div>,
+          document.body
+        )}
+
       <OfflineIndicator />
     </div>
   );

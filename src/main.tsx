@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App.tsx';
 import { ThemeProvider } from './context/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { isNativeApp, setPwaFlag, setPwaUpdateHandler } from './exam/pwa';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -19,14 +20,19 @@ if (rootElement) {
   );
 }
 
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && !isNativeApp()) {
   if (import.meta.env.PROD) {
     try {
-      registerSW({
+      const updateSW = registerSW({
         immediate: true,
-        onNeedRefresh() {},
-        onOfflineReady() {},
+        onNeedRefresh() {
+          setPwaFlag('needRefresh', true);
+        },
+        onOfflineReady() {
+          setPwaFlag('offlineReady', true);
+        },
       });
+      setPwaUpdateHandler(updateSW);
     } catch (err) {
       console.warn('PWA ServiceWorker registration error (ignored in iframes):', err);
     }

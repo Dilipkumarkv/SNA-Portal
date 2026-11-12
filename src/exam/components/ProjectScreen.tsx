@@ -1,17 +1,18 @@
 import type { ReactNode } from 'react';
-import { Check } from 'lucide-react';
+import { ArrowUpRight, Check } from 'lucide-react';
+import type { LabId, MachineViewId } from '../types';
 import { CIE5_PARTS, PROJECT_EVIDENCE, PROJECT_SECTIONS } from '../content';
 import { examActions, useExamState } from '../store';
 import { PageHead, SectionHead } from './PageHead';
 import { RichText } from './RichText';
 
-function TwoColumn({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
+const PROJECT_GROUPS: { title: string; note: string; ids: string[] }[] = [
+  { title: 'Plan', note: 'purpose, room, equipment', ids: ['summary', 'room', 'hardware'] },
+  { title: 'Build', note: 'network, power, safety', ids: ['network', 'electrical', 'safety'] },
+  { title: 'Run', note: 'security, upkeep, handover', ids: ['security', 'maintenance', 'ewaste', 'timeline'] },
+];
+
+function TwoColumn({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
       <h3 className="font-display text-[1.05rem] font-semibold text-ink">{title}</h3>
@@ -20,9 +21,27 @@ function TwoColumn({
   );
 }
 
-export function ProjectScreen() {
+export function ProjectScreen({
+  onOpenMachine,
+  onOpenLab,
+  onOpenDay,
+  onOpenTerminal,
+}: {
+  onOpenMachine: (view: MachineViewId) => void;
+  onOpenLab: (lab: LabId) => void;
+  onOpenDay: () => void;
+  onOpenTerminal: () => void;
+}) {
   const state = useExamState();
   const written = PROJECT_SECTIONS.filter((section) => state.project.includes(section.id)).length;
+
+  const evidenceLinks = [
+    { label: 'Open the machine', onOpen: () => onOpenMachine('parts') },
+    { label: 'Open the partition lab', onOpen: () => onOpenLab('partition') },
+    { label: 'Practise accounts in the terminal', onOpen: onOpenTerminal },
+    { label: 'Practise network commands', onOpen: onOpenTerminal },
+    { label: 'Open exam day', onOpen: onOpenDay },
+  ];
 
   return (
     <div>
@@ -37,6 +56,72 @@ export function ProjectScreen() {
       </PageHead>
 
       <div className="space-y-12 sm:space-y-16">
+        <section aria-labelledby="document-heading">
+          <SectionHead
+            id="document-heading"
+            title="The document"
+            note={`${written} of ${PROJECT_SECTIONS.length} · tick what is written`}
+          />
+          <div className="mt-4">
+            {PROJECT_GROUPS.map((group) => {
+              const sections = group.ids
+                .map((id) => PROJECT_SECTIONS.find((section) => section.id === id))
+                .filter((section): section is (typeof PROJECT_SECTIONS)[number] => Boolean(section));
+              const done = sections.filter((section) => state.project.includes(section.id)).length;
+              return (
+                <div key={group.title} className="mt-6 first:mt-0">
+                  <div className="flex items-baseline justify-between gap-3 border-b border-line pb-1.5">
+                    <h3 className="text-xs font-bold uppercase tracking-[0.07em] text-ink">
+                      {group.title}
+                      <span className="ml-1.5 font-normal normal-case tracking-normal text-ink-3">
+                        {group.note}
+                      </span>
+                    </h3>
+                    <span className="text-xs text-ink-2 tnum">
+                      {done}/{sections.length}
+                    </span>
+                  </div>
+                  <ul>
+                    {sections.map((section) => {
+                      const index = PROJECT_SECTIONS.findIndex((item) => item.id === section.id);
+                      const checked = state.project.includes(section.id);
+                      return (
+                        <li key={section.id} className="border-b border-line">
+                          <label className="flex cursor-pointer items-start gap-3 py-3.5">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => examActions.toggleProject(section.id)}
+                              className="mt-0.5 h-[22px] w-[22px] shrink-0 accent-[var(--brand)]"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-baseline gap-2">
+                                <span className="font-mono text-xs font-semibold text-ink-3 tnum">
+                                  {String(index + 1).padStart(2, '0')}
+                                </span>
+                                <span
+                                  className={`text-[0.9375rem] font-medium ${
+                                    checked ? 'text-ink-3 line-through decoration-line-strong' : 'text-ink'
+                                  }`}
+                                >
+                                  {section.title}
+                                </span>
+                              </span>
+                              <span className="mt-0.5 block text-sm leading-relaxed text-ink-2">
+                                {section.detail}
+                              </span>
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         <section aria-labelledby="cie5-heading">
           <SectionHead id="cie5-heading" title="Where the CIE-5 marks sit" note="Internal assessment · 50 marks" />
           <dl className="border-t border-line">
@@ -53,46 +138,6 @@ export function ProjectScreen() {
           </p>
         </section>
 
-        <section aria-labelledby="document-heading">
-          <SectionHead
-            id="document-heading"
-            title="The document"
-            note={`${written} of ${PROJECT_SECTIONS.length} · tick what is written`}
-          />
-          <ul className="border-t border-line">
-            {PROJECT_SECTIONS.map((section, index) => {
-              const checked = state.project.includes(section.id);
-              return (
-                <li key={section.id} className="border-b border-line">
-                  <label className="flex cursor-pointer items-start gap-3 py-3.5">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => examActions.toggleProject(section.id)}
-                      className="mt-1 h-[18px] w-[18px] shrink-0 accent-[var(--brand)]"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline gap-2">
-                        <span className="font-mono text-xs font-semibold text-ink-3 tnum">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                        <span
-                          className={`text-[0.9375rem] font-medium ${
-                            checked ? 'text-ink-3 line-through decoration-line-strong' : 'text-ink'
-                          }`}
-                        >
-                          {section.title}
-                        </span>
-                      </span>
-                      <span className="mt-0.5 block text-sm leading-relaxed text-ink-2">{section.detail}</span>
-                    </span>
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
         <section aria-labelledby="evidence-heading">
           <SectionHead
             id="evidence-heading"
@@ -100,11 +145,21 @@ export function ProjectScreen() {
             note="Use the numbers you measured"
           />
           <dl className="border-t border-line">
-            {PROJECT_EVIDENCE.map((item) => (
+            {PROJECT_EVIDENCE.map((item, index) => (
               <div key={item.source} className="grid gap-1 border-b border-line py-3 sm:grid-cols-[12rem_1fr] sm:gap-5">
                 <dt className="text-sm font-medium text-ink">{item.source}</dt>
                 <dd className="text-sm leading-relaxed text-ink-2">
                   <RichText text={item.use} />
+                  {evidenceLinks[index] ? (
+                    <button
+                      type="button"
+                      onClick={evidenceLinks[index].onOpen}
+                      className="mt-1.5 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-text hover:underline"
+                    >
+                      {evidenceLinks[index].label}
+                      <ArrowUpRight size={14} aria-hidden="true" />
+                    </button>
+                  ) : null}
                 </dd>
               </div>
             ))}

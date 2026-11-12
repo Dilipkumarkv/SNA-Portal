@@ -1,4 +1,4 @@
-package com.learning.app;
+package in.setpoly.snaportal;
 
 import com.getcapacitor.BridgeActivity;
 

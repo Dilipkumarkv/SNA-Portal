@@ -57,7 +57,7 @@ export function ExamDayScreen({ onOpenMachine }: { onOpenMachine: (view: Machine
                 <BlockList items={phase.steps} ordered />
 
                 <div className="mt-5">
-                  <h3 className="text-sm font-semibold text-ink">Show the examiner</h3>
+                  <h2 className="text-sm font-semibold text-ink">Show the examiner</h2>
                   <div className="mt-1.5">
                     <BlockList items={phase.show} />
                   </div>
@@ -76,7 +76,7 @@ export function ExamDayScreen({ onOpenMachine }: { onOpenMachine: (view: Machine
 
                 {phase.links?.length ? (
                   <div className="mt-4 flex flex-wrap gap-x-2 gap-y-1">
-                    <span className="flex min-h-9 items-center text-xs text-ink-3">Revise on the machine:</span>
+                    <span className="flex min-h-11 items-center text-xs text-ink-3">Revise on the machine:</span>
                     {phase.links.map((link) => (
                       <button
                         key={link.view}

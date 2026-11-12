@@ -186,6 +186,12 @@ textarea {
   outline: none;
 }
 
+/* Route changes move focus here for screen readers; they are not keyboard stops. */
+h1[tabindex='-1']:focus-visible,
+main[tabindex='-1']:focus-visible {
+  outline: none;
+}
+
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   text-wrap: balance;

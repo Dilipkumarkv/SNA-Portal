@@ -55,6 +55,8 @@ export interface ExamState {
   project: string[];
   mock: { startedAt: number; endAt: number } | null;
   quizSeen: number[];
+  lastLab: LabId | null;
+  labsReviewed: LabId[];
 }
 
 export const MACHINE_VIEW_IDS = ['back', 'front', 'cables', 'board', 'parts'] as const;
