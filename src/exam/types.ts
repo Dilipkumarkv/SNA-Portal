@@ -63,11 +63,20 @@ export const MACHINE_VIEW_IDS = ['back', 'front', 'cables', 'board', 'parts'] as
 
 export type MachineViewId = (typeof MACHINE_VIEW_IDS)[number];
 
-export const LAB_IDS = ['rufus', 'partition', 'windows', 'ubuntu', 'diskpart', 'restore', 'startup'] as const;
+export const LAB_IDS = [
+  'rufus', 'partition', 'windows', 'ubuntu', 'diskpart', 'restore', 'startup',
+  'partition-style', 'resize-partition', 'file-recovery', 'registry-backup', 'app-reinstall', 'windows-update',
+  'task-manager', 'services', 'scheduled-task', 'device-driver', 'printer-driver', 'network-driver', 'system-integrity',
+  'ipv4-settings', 'dns-settings', 'adapter-details', 'ping-test', 'trace-route', 'network-statistics',
+  'dns-reset', 'firewall-rule', 'wifi-profile', 'folder-sharing', 'remote-desktop',
+  'network-task-manager', 'network-resource-monitor', 'create-vm', 'vm-network-mode',
+  'guest-network-commands', 'vm-network-metrics', 'vpn-connect', 'vpn-compare',
+  'ewaste-policy', 'ewaste-classify', 'ewaste-process', 'ewaste-case-study', 'lab-energy',
+] as const;
 
 export type LabId = (typeof LAB_IDS)[number];
 
-export type LabWeek = 5 | 6 | 7;
+export type LabWeek = 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
 /** plan, drills and viva are parked while the guide is validated; keep them typed for the archived screens. */
 export type ExamTab = 'machine' | 'day' | 'labs' | 'project' | 'terminal' | 'plan' | 'drills' | 'viva';

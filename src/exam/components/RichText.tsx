@@ -5,7 +5,7 @@ const TOKEN = /(\*\*[^*]+\*\*|`[^`]+`)/g;
 export function RichText({ text, className = '' }: { text: string; className?: string }) {
   const parts = text.split(TOKEN);
   return (
-    <span className={className}>
+    <span className={`min-w-0 [overflow-wrap:anywhere] ${className}`}>
       {parts.map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
           return (
@@ -18,7 +18,7 @@ export function RichText({ text, className = '' }: { text: string; className?: s
           return (
             <code
               key={index}
-              className="rounded-[5px] border border-line bg-sunken px-1 py-px font-mono text-[0.86em] text-ink"
+              className="rounded-[5px] border border-line bg-sunken px-1 py-px font-mono text-[0.86em] text-ink [overflow-wrap:anywhere]"
             >
               {part.slice(1, -1)}
             </code>

@@ -10,9 +10,7 @@ import { LabsScreen } from './components/LabsScreen';
 
 export function ExamPortal() {
   const [route, setRoute] = useState<ExamRoute>(() => parseExamHash(window.location.hash));
-  const lastTab = useRef(route.tab);
-  const lastLab = useRef(route.lab);
-  const routeKey = `${route.tab}|${route.lab ?? ''}`;
+  const routeKey = `${route.tab}|${route.lab ?? ''}|${route.week ?? ''}`;
   const lastRouteKey = useRef(routeKey);
 
   useEffect(() => {
@@ -22,25 +20,12 @@ export function ExamPortal() {
   }, []);
 
   useEffect(() => {
-    if (lastTab.current !== route.tab) {
-      window.scrollTo({ top: 0, behavior: 'auto' });
-      lastTab.current = route.tab;
-    }
-  }, [route.tab]);
-
-  useEffect(() => {
-    if (lastLab.current !== route.lab) {
-      window.scrollTo({ top: 0, behavior: 'auto' });
-      lastLab.current = route.lab;
-    }
-  }, [route.lab]);
-
-  useEffect(() => {
     const heading = document.querySelector<HTMLElement>('#main-content h1');
     const name = heading?.textContent?.trim().replace(/\.$/, '');
     document.title = `${name || 'Practical exam guide'} · SNA 25CS34I`;
     if (lastRouteKey.current === routeKey) return;
     lastRouteKey.current = routeKey;
+    window.scrollTo({ top: 0, behavior: 'auto' });
     heading?.focus({ preventScroll: true });
   }, [routeKey]);
 
@@ -82,7 +67,7 @@ export function ExamPortal() {
         {route.tab === 'labs' ? (
           <LabsScreen
             lab={route.lab}
-            onOpenLab={openLab}
+            week={route.week}
             onOpenDay={() => navigate('day')}
           />
         ) : null}

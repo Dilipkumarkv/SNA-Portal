@@ -58,7 +58,7 @@ export const manifest: AppManifest = {
   ],
   shortcuts: [
     { name: 'Rehearse commands', short_name: 'Terminal', url: '/#terminal', icons: shortcutIcon },
-    { name: 'Week 5-7 labs', short_name: 'Labs', url: '/#labs', icons: shortcutIcon },
+    { name: 'Lab revision guides', short_name: 'Labs', url: '/#labs', icons: shortcutIcon },
     { name: 'Exam day walkthrough', short_name: 'Exam day', url: '/#day', icons: shortcutIcon },
   ],
   screenshots: [
@@ -67,7 +67,7 @@ export const manifest: AppManifest = {
       sizes: '390x844',
       type: 'image/png',
       form_factor: 'narrow',
-      label: 'The seven lab guides on a phone',
+      label: 'Week-by-week lab revision on a phone',
     },
     {
       src: '/screenshots/narrow-terminal.png',

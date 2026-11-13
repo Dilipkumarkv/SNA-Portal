@@ -1,4 +1,9 @@
 import type { LabId, LabWeek } from './types';
+import { WEEK08_LABS } from './labs/week08';
+import { WEEK09_LABS } from './labs/week09';
+import { WEEK10_LABS } from './labs/week10';
+import { WEEK11_LABS } from './labs/week11';
+import { WEEK12_LABS } from './labs/week12';
 
 export interface LabPoint {
   n: number;
@@ -15,6 +20,13 @@ export interface Lab {
   id: LabId;
   number: string;
   week: LabWeek;
+  alsoInWeeks?: LabWeek[];
+  sources: { document: 'lab-manual'; experiment: string; page: number; title: string }[];
+  prerequisites: string[];
+  expected: string[];
+  related: LabId[];
+  /** Syllabus supplements, not additional manual procedures. */
+  concepts: string[];
   eyebrow: string;
   title: string;
   aim: string;
@@ -36,11 +48,21 @@ export const LAB_WEEKS: { week: LabWeek; topic: string }[] = [
   { week: 5, topic: 'install media' },
   { week: 6, topic: 'the command line' },
   { week: 7, topic: 'repair and tuning' },
+  { week: 8, topic: 'disks, recovery and updates' },
+  { week: 9, topic: 'performance and maintenance' },
+  { week: 10, topic: 'network configuration and troubleshooting' },
+  { week: 11, topic: 'monitoring, virtual machines and VPNs' },
+  { week: 12, topic: 'e-waste and energy' },
 ];
 
 export const LABS: Lab[] = [
   {
     id: 'rufus',
+    sources: [{ document: 'lab-manual', experiment: '14', page: 16, title: 'Creating a Bootable USB Drive Using Rufus' }],
+    prerequisites: ['Approved Windows PC, official Rufus and authorized OS ISO.', 'Assigned USB of sufficient capacity, backed up before erasure; teacher-confirmed target firmware compatibility.'],
+    expected: ['Rufus reports READY for the intended USB and ISO; verify boot selection on the assigned PC only when authorized.'],
+    related: ['windows', 'ubuntu'],
+    concepts: [],
     number: '05.1',
     week: 5,
     eyebrow: 'Install media',
@@ -85,6 +107,15 @@ export const LABS: Lab[] = [
   },
   {
     id: 'partition',
+    alsoInWeeks: [8],
+    sources: [
+      { document: 'lab-manual', experiment: '15', page: 17, title: 'Hard Disk Partitioning and Formatting' },
+      { document: 'lab-manual', experiment: '20', page: 20, title: 'Creating and Formatting a New Hard Disk Partition' },
+    ],
+    prerequisites: ['Windows Disk Management with authorized disk-management access.', 'Backed-up instructor-approved test disk with identified unallocated space; assigned size and available drive letter.'],
+    expected: ['The new volume appears in Explorer and Disk Management with the assigned capacity, letter, label and NTFS filesystem.', 'If the target or free space cannot be identified, cancel and record why no change was made.'],
+    related: ['partition-style', 'resize-partition', 'diskpart'],
+    concepts: ['Supplement: FAT32 has a per-file limit just below 4 GiB; NTFS supports large files, Windows permissions and journaling; exFAT supports large removable-media files but lacks NTFS permissions and journaling.', 'Supplement: a partition is a disk region; a filesystem organizes files inside a volume. Deleting a file is not deleting a partition. MBR/GPT describes partition layout, not the filesystem or a universal firmware compatibility rule.'],
     number: '05.2',
     week: 5,
     eyebrow: 'Disks',
@@ -103,11 +134,11 @@ export const LABS: Lab[] = [
     ],
     steps: [
       { text: 'Open Disk Management with `diskmgmt.msc`.' },
-      { text: 'Find the disk named in the paper and read its size. Right-click the disk label → Properties → Volumes to confirm GPT or MBR.' },
+      { text: 'Find the disk named in the paper and read its size. Confirm GPT or MBR with the **Identify MBR or GPT** guide before creating a volume.' },
       { text: 'Right-click the unallocated space and choose **New Simple Volume**.' },
       { text: 'In the wizard, enter the size in MB and click Next.' },
       { text: 'Assign an available drive letter such as `E:`.' },
-      { text: 'Choose **NTFS**, type a volume label, tick **Perform a quick format**, and click Next.' },
+      { text: 'Choose **NTFS**, type a volume label, tick **Perform a quick format**, and click Next.', stop: 'Only the new volume on approved backed-up test storage may be formatted. Cancel if the target cannot be identified.' },
       { text: 'Click Finish and wait for the format to complete.' },
       { text: 'Check the new volume in File Explorer and in Disk Management.' },
     ],
@@ -115,17 +146,22 @@ export const LABS: Lab[] = [
     wrong:
       'New Simple Volume greyed out? Right-click the unallocated block itself; the free space must sit on one disk. If the wizard is for the wrong disk, cancel it — nothing changes until you click Finish.',
     check: {
-      q: 'What must you confirm before you format the new volume?',
-      a: 'That the disk, the unallocated block and the drive letter belong to the test disk named in the paper — formatting erases that space.',
+      q: 'What gets formatted when you finish this wizard?',
+      a: 'Only the selected new volume, not every partition. Confirm the disk, unallocated block and letter before formatting; cancel if uncertain.',
     },
     ask: {
       q: 'Why NTFS rather than FAT32 for this volume?',
-      a: 'NTFS supports files over 4 GB, permissions and journaling. FAT32 is meant for small removable media.',
+      a: 'NTFS supports large files, permissions and journaling; FAT32 has a per-file limit just below 4 GiB and may be chosen for compatibility.',
     },
     examLabel: 'Drivers, disks, commands',
   },
   {
     id: 'windows',
+    sources: [{ document: 'lab-manual', experiment: '16', page: 18, title: 'Installation of Windows 10 Using a Bootable USB' }],
+    prerequisites: ['Compatible assigned lab PC, authorized Windows media, institution licensing procedure and bootable USB.', 'Backups and teacher-approved target partition; do not collect product keys or passwords in this guide.'],
+    expected: ['Windows boots from the installed disk after Setup, with the assigned edition and account.', 'Verify required user, driver, display and audio settings; record unavailable devices rather than assuming all drivers work.'],
+    related: ['rufus', 'device-driver'],
+    concepts: [],
     number: '05.3',
     week: 5,
     eyebrow: 'Install',
@@ -168,6 +204,11 @@ export const LABS: Lab[] = [
   },
   {
     id: 'ubuntu',
+    sources: [{ document: 'lab-manual', experiment: '17', page: 19, title: 'Installation of Linux (Ubuntu) Using a Bootable USB' }],
+    prerequisites: ['Compatible assigned computer, official Ubuntu ISO and bootable USB.', 'Backed-up test disk, approved partition plan and local account policy.'],
+    expected: ['Ubuntu boots from the installed disk and the created account can sign in.', 'Verify storage, display, sound and network settings; note missing hardware support or errors.'],
+    related: ['rufus', 'create-vm'],
+    concepts: [],
     number: '05.4',
     week: 5,
     eyebrow: 'Install',
@@ -194,7 +235,7 @@ export const LABS: Lab[] = [
       { text: 'Set the time zone, then enter the name, computer name, username and a strong password.' },
       { text: 'Review the summary, install, restart when asked, remove the stick, and sign in.' },
     ],
-    record: ['Ubuntu version', 'Disk used', 'Username and password', 'File system: ext4'],
+    record: ['Ubuntu version', 'Disk used', 'Username and password policy/type — never the password value', 'File system: ext4'],
     wrong:
       'No disk shown? Check the SATA cable and the BIOS mode. Installer offers no Erase disk? Use Something else and create the partitions the paper names.',
     check: {
@@ -209,6 +250,12 @@ export const LABS: Lab[] = [
   },
   {
     id: 'diskpart',
+    alsoInWeeks: [8],
+    sources: [{ document: 'lab-manual', experiment: '23', page: 23, title: 'Disk Management Using DiskPart Commands' }],
+    prerequisites: ['Windows with authorized administrator Command Prompt.', 'Instructor-identified test disk and volume; known capacity/model for comparison.'],
+    expected: ['Disk and volume identities agree with the assigned storage; record layout without changing data.', 'Exit if identity is ambiguous or access is denied; inspection is not permission to modify a disk.'],
+    related: ['partition', 'partition-style'],
+    concepts: ['Supplement: disk numbers can change across computers or reconnection. Selection sets command focus, not a persistent identity.'],
     number: '06.1',
     week: 6,
     eyebrow: 'Command line',
@@ -218,38 +265,47 @@ export const LABS: Lab[] = [
     minutes: 4,
     thumbLabel: 'DISKPART',
     screenNote: 'Screen guide of an administrator Command Prompt running DiskPart.',
-    caution: 'This card only reads. `clean`, `delete partition` and `format` destroy data — never run them on a disk the paper did not name.',
+    caution: 'Inspection only: do not run clean, delete partition, format or conversion commands anywhere in this exercise.',
     points: [
       { n: 1, name: 'list disk', detail: 'Show every disk with its size and Gpt mark.' },
       { n: 2, name: 'Disk 1 · the test stick', detail: '14 GB with no star, so this one is MBR. Disk 0 is GPT.' },
       { n: 3, name: 'select disk', detail: 'Select by number only after checking the size.' },
-      { n: 4, name: 'detail disk', detail: 'Read the model, size and partition style.' },
-      { n: 5, name: 'exit', detail: 'Leave DiskPart; nothing has been changed.' },
+      { n: 4, name: 'detail disk', detail: 'Confirm the selected disk model and layout against the assignment.' },
+      { n: 5, name: 'Volume details', detail: 'select volume Y and detail volume inspect the approved volume; exit leaves DiskPart.' },
     ],
     steps: [
       { text: 'Open Command Prompt with administrator privileges.' },
       { text: 'Type `diskpart` and press Enter.' },
       { text: 'Run `list disk`. Match the disk number by size and read the Gpt column.' },
-      { text: 'Run `select disk 1`, using the number the paper names.' },
-      { text: 'Run `detail disk` to confirm the model, size and partition style.' },
-      { text: 'Run `list partition` and `list volume` to read the layout.' },
-      { text: 'Type `exit` to close DiskPart.' },
+      { text: 'Run `select disk X`, replacing X with the assigned disk number.', stop: 'Confirm capacity and model; do not assume Disk 1 is always the test disk.' },
+      { text: 'Run `detail disk` and compare its identity with the assignment.' },
+      { text: 'Run `list partition` to inspect partitions on the selected disk.' },
+      { text: 'Run `list volume`. This lists available volumes, not only those on the selected disk.' },
+      { text: 'Run `select volume Y`, replacing Y with the approved volume number after checking its letter, label and size.' },
+      { text: 'Run `detail volume` and record the volume identity and associated disk information.' },
+      { text: 'Type `exit` to close DiskPart; close the terminal after recording the read-only observations.' },
     ],
-    record: ['Disk number and size', 'Partition style: GPT or MBR', 'Number of partitions'],
+    record: ['Disk number, model and size', 'Partition style: GPT or MBR', 'Number of partitions', 'Approved volume number, letter, label and size'],
     wrong:
-      '“Access denied”? Open Command Prompt as administrator. Selected the wrong disk? Run `list disk`, then `select disk` again with the correct number. No command changes a disk until you select it.',
+      'Access denied? Ask for authorized administrator access. Ambiguous disk or volume identity? Stop and ask the teacher. Selecting changes focus but not data; later modifying commands could act on that focus.',
     check: {
-      q: 'How do you know you selected the right disk?',
-      a: '`list disk` shows the size and Gpt column; `select disk X` followed by `detail disk` confirms the model, size and style before any other command.',
+      q: 'Does select disk or select volume modify stored data?',
+      a: 'No. It sets the target for later commands, so verify identity before proceeding even in an inspection exercise.',
     },
     ask: {
-      q: 'What does the Gpt column tell you?',
-      a: 'A * means the disk is GPT. A blank entry generally means MBR.',
+      q: 'Why verify capacity and model as well as the disk number?',
+      a: 'Disk numbers are not universal identities; checking capacity and model avoids inspecting or later changing the wrong disk.',
     },
     examLabel: 'Drivers, disks, commands',
   },
   {
     id: 'restore',
+    alsoInWeeks: [8],
+    sources: [{ document: 'lab-manual', experiment: '26', page: 26, title: 'Creating and Using a Windows System Restore Point' }],
+    prerequisites: ['Authorized Windows test PC with System Protection enabled or teacher approval to enable it.', 'Saved work, separate personal-file backup, stable power and a small approved reversible change.'],
+    expected: ['Point creation is confirmed before the change; after supervised restore/restart, compare the assigned configuration with its original state.', 'Record the actual restore result or error; personal-file recovery is not a verification criterion.'],
+    related: ['registry-backup', 'file-recovery'],
+    concepts: ['Supplement: restore points protect selected system configuration, not personal documents. Separate backups remain necessary; never deliberately corrupt a system.'],
     number: '07.1',
     week: 7,
     eyebrow: 'Repair',
@@ -273,29 +329,35 @@ export const LABS: Lab[] = [
       { text: 'Wait for the confirmation, then make the small change the teacher approves.' },
       { text: 'Open **System Restore** from the same tab.' },
       { text: 'Choose the point by name and time, and read the affected programs.' },
-      { text: 'Confirm the restore and let Windows restart.' },
-      { text: 'Check that the change is undone, then record the point name and time.' },
+      { text: 'Confirm the restore under supervision and let Windows restart.', stop: 'Save work first. Never interrupt restoration or deliberately damage the system to create a test.' },
+      { text: 'Compare the assigned setting before and after; record the point name, time and actual result, including an unsuccessful restore.' },
     ],
     record: ['Drive protected', 'Restore point name and time', 'What changed after restore'],
     wrong:
-      'Protection Off? Turn it on for the system drive before creating a point. Restore did not undo your change? Some app files and personal files are not covered — tell the examiner what you expected.',
+      'Protection Off? Ask the teacher to enable it before creating a point. Restore did not undo your change? Some app files and personal files are not covered; record the result and ask before attempting any further repair.',
     check: {
       q: 'Does System Restore delete your documents?',
       a: 'No. It returns system files, drivers, installed programs and registry settings to the point; personal files are left in place. It is not a backup.',
     },
     ask: {
-      q: 'When would you use a restore point?',
-      a: 'After a bad driver or update, or a registry change, to return the machine to a known-good state.',
+      q: 'Why inspect affected programs before restoring?',
+      a: 'Apps and drivers installed after the point may be removed or changed. Check the consequences with the teacher before confirming.',
     },
     examLabel: 'Users and repair',
   },
   {
     id: 'startup',
+    alsoInWeeks: [9],
+    sources: [{ document: 'lab-manual', experiment: '30', page: 30, title: 'Troubleshooting Slow Windows Start-up' }],
+    prerequisites: ['Assigned Windows PC, Task Manager and one teacher-approved nonessential startup app.', 'Saved work and a repeatable sign-in workload; permission to restart and restore the original status.'],
+    expected: ['The chosen app status changes to Disabled; compare post-sign-in desktop readiness with the same workload.', 'Record unchanged or variable timing honestly and verify the original startup status after cleanup.'],
+    related: ['task-manager', 'services'],
+    concepts: ['Supplement: Last BIOS time measures firmware initialization, not sign-in or startup-app delay; it is not evidence of improvement from disabling an app.', 'Manual deviation: page 30 step 7 says to repeat the disable for other approved nonessential apps. This guide changes one startup app at a time so the before/after comparison stays attributable to a single change, then restores it.'],
     number: '07.2',
     week: 7,
     eyebrow: 'Performance',
     title: 'Fix a slow start-up',
-    aim: 'Find what delays the boot and disable only what is safe.',
+    aim: 'Examine post-sign-in delays and disable only an approved nonessential startup app.',
     tool: 'Task Manager',
     minutes: 3,
     thumbLabel: 'STARTUP',
@@ -308,29 +370,54 @@ export const LABS: Lab[] = [
       { n: 4, name: 'Disable', detail: 'Only for an approved, unnecessary app.' },
     ],
     steps: [
+      { text: 'Sign in normally and note the time from sign-in to a usable desktop under the agreed workload.' },
       { text: 'Open Task Manager with **Ctrl + Shift + Esc**.' },
-      { text: 'Open the **Startup apps** tab. On Windows 10 it may be called simply Startup.' },
-      { text: 'Read the Status and Startup impact columns.' },
-      { text: 'Ask the teacher before disabling anything. Never disable antivirus, a driver helper or lab software.' },
-      { text: 'Select one approved, unnecessary app and click **Disable**.' },
-      { text: 'Restart the PC and compare the Last BIOS time and the desktop load with the earlier notes.' },
-      { text: 'Re-enable anything that turns out to be needed.' },
+      { text: 'Open **Startup apps**; Windows 10 may call the tab Startup.' },
+      { text: 'Read app names, Status and Startup impact; note the original status of the proposed test app.' },
+      { text: 'Ask the teacher to approve one nonessential app.', stop: 'Antivirus, driver helpers and institutional software must stay enabled.' },
+      { text: 'Select the approved app and click **Disable**; verify its new status.' },
+      { text: 'Save work, restart and compare post-sign-in desktop readiness using the same workload and timing method.' },
+      { text: 'Record the observed effect, including no clear improvement; do not infer causation from one noisy timing.' },
+      { text: 'Restore the original app status as instructed and verify it in Startup apps.' },
     ],
-    record: ['App disabled and its impact', 'Last BIOS time before and after', 'What you re-enabled'],
+    record: ['App, original status and startup impact', 'Post-sign-in desktop readiness before and after, workload and timing method', 'Observed effect and restored status'],
     wrong:
       'App starts again? Another scheduled task or service may launch it; check Startup in Settings. Boot time unchanged? Startup apps are only one cause — memory, disk health and updates matter too.',
     check: {
-      q: 'What must you check before disabling a startup app?',
-      a: 'That it is not antivirus, a driver or lab software, and that the teacher has approved it. Note its impact first.',
+      q: 'Does disabling a startup app uninstall it?',
+      a: 'No. It prevents this automatic startup entry; it does not uninstall the application and other mechanisms may still launch it.',
     },
     ask: {
-      q: 'How do you show that the change helped?',
-      a: 'Compare the Last BIOS time and the desktop load before and after, and list what you disabled with its startup impact.',
+      q: 'Why change one startup app at a time?',
+      a: 'A controlled change makes post-sign-in comparisons more meaningful; use the same workload and restore the original status afterward.',
     },
     examLabel: 'Users and repair',
   },
+  ...WEEK08_LABS,
+  ...WEEK09_LABS,
+  ...WEEK10_LABS,
+  ...WEEK11_LABS,
+  ...WEEK12_LABS,
 ];
+
+// Only shared groups need an override; other groups already follow canonical order.
+const SHARED_WEEK_ORDER: Partial<Record<LabWeek, LabId[]>> = {
+  8: ['partition', 'partition-style', 'resize-partition', 'diskpart', 'file-recovery', 'registry-backup', 'restore', 'app-reinstall', 'windows-update'],
+  9: ['task-manager', 'startup', 'services', 'scheduled-task', 'device-driver', 'printer-driver', 'network-driver', 'system-integrity'],
+};
 
 export const labBySlug = (id: LabId) => LABS.find((lab) => lab.id === id);
 
-export const labsForWeek = (week: LabWeek) => LABS.filter((lab) => lab.week === week);
+export const labsForWeek = (week: LabWeek): Lab[] => {
+  const members = LABS.filter((lab) => lab.week === week || lab.alsoInWeeks?.includes(week));
+  const order = SHARED_WEEK_ORDER[week];
+  if (!order) return members;
+  if (order.length !== members.length || new Set(order).size !== order.length) {
+    throw new Error(`Invalid lab membership order for week ${week}`);
+  }
+  return order.map((id) => {
+    const lab = members.find((member) => member.id === id);
+    if (!lab) throw new Error(`Unknown lab membership ${id} for week ${week}`);
+    return lab;
+  });
+};

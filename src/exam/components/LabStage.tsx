@@ -1,13 +1,13 @@
 import { useState, type ComponentType, type ReactNode } from 'react';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import type { LabId } from '../types';
-import type { Lab, LabPoint } from '../labs';
-
-interface ScreenProps {
-  active: number | null;
-  onSelect: (n: number) => void;
-  points: LabPoint[];
-}
+import type { Lab } from '../labs';
+import type { ScreenProps } from './lab-stages/shared';
+import { diskRecoveryStages } from './lab-stages/disk-recovery';
+import { maintenanceStages } from './lab-stages/maintenance';
+import { networkingStages } from './lab-stages/networking';
+import { monitoringStages } from './lab-stages/monitoring';
+import { evidenceStages } from './lab-stages/evidence';
 
 const FIELD =
   'relative flex h-5 min-w-0 items-center rounded-[3px] border border-black/15 bg-white px-1.5 font-mono text-[9px] text-black/75 sm:h-6 sm:text-[10px]';
@@ -390,6 +390,8 @@ function DiskPartScreen(props: ScreenProps) {
           {dot(2, '-right-2 top-1/2 -translate-y-1/2')}
         </div>
         <div>&nbsp;</div>
+        {/* Keeps the 44px annotation hit areas on dots 2 and 3 from overlapping. */}
+        <div className="h-3.5" aria-hidden="true" />
         <div className={TERM_LINE}>
           DISKPART&gt; select disk 1
           {dot(3, '-right-2 top-1/2 -translate-y-1/2')}
@@ -403,12 +405,23 @@ function DiskPartScreen(props: ScreenProps) {
         <div className="text-[#9a9a9a]">  Type   : USB</div>
         <div className="text-[#9a9a9a]">  Status : Online</div>
         <div className="text-[#9a9a9a]">  Size   : 14 GB</div>
-        <div className="text-[#9a9a9a]">  Style  : MBR</div>
+        <div>&nbsp;</div>
+        <div className={TERM_LINE}>DISKPART&gt; list partition</div>
+        <div className="text-[#9a9a9a]">  Partition 1    Primary             14 GB  1024 KB</div>
+        <div>&nbsp;</div>
+        <div className={TERM_LINE}>DISKPART&gt; list volume</div>
+        <div className="text-[#9a9a9a]">  Volume 3     E   DATA         NTFS   Partition     14 GB  Healthy</div>
+        <div>&nbsp;</div>
+        <div className={TERM_LINE}>DISKPART&gt; select volume 3</div>
+        <div className="text-[#9a9a9a]">Volume 3 is the selected volume.</div>
         <div>&nbsp;</div>
         <div className={TERM_LINE}>
-          DISKPART&gt; exit
+          DISKPART&gt; detail volume
           {dot(5, '-right-2 top-1/2 -translate-y-1/2')}
         </div>
+        <div className="text-[#9a9a9a]">* Disk 1    Online     14 GB      0 B</div>
+        <div>&nbsp;</div>
+        <div className={TERM_LINE}>DISKPART&gt; exit</div>
       </div>
     </Window>
   );
@@ -475,14 +488,14 @@ function StartupScreen(props: ScreenProps) {
   return (
     <Window title="Task Manager">
       <div className="px-2.5 pb-2.5 pt-1.5">
-        <div className="flex items-end gap-2.5 border-b border-black/10 text-[8.5px] text-black/50">
-          <span className="pb-1">Processes</span>
-          <span className="pb-1">Performance</span>
-          <span className="relative -mb-px rounded-t-[2px] border-b-2 border-[#4d785b] pb-1 pl-4 font-medium text-black/80">
+        <div className="flex items-end gap-2.5 overflow-x-auto border-b border-black/10 text-[8.5px] text-black/50">
+          <span className="shrink-0 pb-1">Processes</span>
+          <span className="shrink-0 pb-1">Performance</span>
+          <span className="relative -mb-px shrink-0 rounded-t-[2px] border-b-2 border-[#4d785b] pb-1 pl-4 font-medium text-black/80">
             Startup apps
             {dot(1, '-left-2 top-1/2 -translate-y-1/2')}
           </span>
-          <span className="pb-1">Users</span>
+          <span className="shrink-0 pb-1">Users</span>
         </div>
 
         <div className={`${STARTUP_COLS} mt-1.5 border-b border-black/10 px-1 pb-0.5 text-[8px] uppercase tracking-wide text-black/45`}>
@@ -498,7 +511,7 @@ function StartupScreen(props: ScreenProps) {
           <StartupRow name="SecurityHealth" status="Enabled" impact="Low" />
           <StartupRow name="OneDrive" status="Enabled" impact="Medium" />
           <StartupRow
-            name="Lab Agent"
+            name="Game Launcher"
             status="Enabled"
             impact="High"
             statusDot={dot(3, '-left-2 top-1/2 -translate-y-1/2')}
@@ -507,7 +520,7 @@ function StartupScreen(props: ScreenProps) {
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-2 border-t border-black/10 pt-1.5 text-[8.5px] text-black/50">
-          <span>Last BIOS time: 12.4 seconds</span>
+          <span>BIOS time measures firmware, not apps</span>
           <span className={`relative ${SMALL_BTN}`}>
             Disable
             {dot(4, '-top-4 left-0')}
@@ -549,7 +562,14 @@ const SCREENS: Record<LabId, ComponentType<ScreenProps>> = {
   diskpart: DiskPartScreen,
   restore: RestoreScreen,
   startup: StartupScreen,
+  ...diskRecoveryStages,
+  ...maintenanceStages,
+  ...networkingStages,
+  ...monitoringStages,
+  ...evidenceStages,
 };
+
+const ILLUSTRATIVE = 'Illustrative example — not your computer’s current state.';
 
 export function LabStage({
   lab,
@@ -582,7 +602,7 @@ export function LabStage({
         aria-label={zoomed ? 'Magnified screen guide, scroll sideways to pan' : undefined}
       >
         <div style={zoomed ? { zoom: 1.4, minWidth: '420px' } : undefined}>
-          <Screen active={active} onSelect={onSelect} points={lab.points} />
+          <Screen lab={lab} active={active} onSelect={onSelect} points={lab.points} />
         </div>
       </div>
       {zoomed ? (
@@ -590,7 +610,9 @@ export function LabStage({
           Drag sideways to pan. The numbered list below holds the same detail.
         </p>
       ) : null}
-      <p className="mt-1.5 text-[0.7rem] leading-snug text-ink-3">{lab.screenNote}</p>
+      <p className="mt-1.5 text-[0.7rem] leading-snug text-ink-3">
+        {lab.screenNote.startsWith('Illustrative example') ? lab.screenNote : `${ILLUSTRATIVE} ${lab.screenNote}`}
+      </p>
 
       <div className="mt-3 overflow-hidden rounded-control border border-line bg-surface">
         {lab.points.map((point) => {
