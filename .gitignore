@@ -8,3 +8,5 @@ coverage/
 .env*
 !.env.example
 vibe_images/
+__pycache__/
+*.pyc

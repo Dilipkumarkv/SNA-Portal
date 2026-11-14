@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* docs/ holds plans, not app markup — keep its code snippets out of the CSS. */
+@source not "../docs";
+
 /* Latin + latin-ext subsets, variable. Self-hosted so the app works under the
    production CSP and offline. */
 @font-face {
