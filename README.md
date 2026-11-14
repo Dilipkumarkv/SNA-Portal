@@ -1,251 +1,171 @@
-# SNA Portal (System & Network Administration Portal)
+# SNA Exam Guide — 25CS34I
 
-**Course:** 25CS34I — System & Network Administration (Semester 3, S.E.T Polytechnic)
-**Tech Stack:** React 19 + TypeScript + Vite + Tailwind CSS v4 + PWA + Capacitor
-**Deployment:** Netlify (SPA) + PWA + Offline-first — see [Deploying to Netlify](#deploying-to-netlify)
-
----
-
-## Project Overview
-
-The SNA Portal is a dual-role educational PWA for the Integrated Course 25CS34I (3:0:4, 5 Credits, 91 hours). It serves students (open access) and administrators (Google OAuth) with:
-
-- **Learn workspace** — 13 weeks × 4 day-lessons = 52 lessons, each with Basics / Overview / Notes / Schematic / Try it / Q&A tabs, plus progress and an Assessments view
-- **Lab explorer** — all 58 experiments from the lab manual, searchable and filterable by week, with a per-experiment procedure checklist
-- **Assessment banks** — inside Learn: CIE model papers, 65 viva questions and 61 CIE questions, filterable by week
-- **Resume card** on Home that returns the student to their last lesson
-- Virtual Terminal Lab (CMD / PowerShell / Bash, 33 commands) for CLI practice
-- Schematic viewers for the real lab machine — photographs of the M83 rear I/O, PSU, H81 board and lab room, plus boot-sequence, disk-layout and RDP/VPN diagrams
-- Guided Lab Mode with step tracking and scenario-based CLI exercises
-- Admin panel for local notes, lab manuals, notices and the CIE schedule (browser-local demo)
-- Offline-first PWA with service worker caching and installable on Android/iOS
-- Mobile screen support (responsive 360px–1024px+), touch targets >=44px, safe-area insets
+**Course:** 25CS34I — System & Network Administration (Semester 3, S.E.T Polytechnic)  
+**Stack:** React 19 + TypeScript + Vite + Tailwind CSS v4 + PWA + Capacitor  
+**Deploy:** Netlify (SPA) + PWA offline-first + Capacitor Android — see [Deploying to Netlify](#deploying-to-netlify)
 
 ---
 
-## Quick Start
+## What this is
+
+A mobile-first PWA for the SNA practical exam (M73 lab PC, 180 min, 50 marks). Five screens, zero backend:
+
+| Screen | Route | What you get |
+|---|---|---|
+| **Machine** | `#machine/back` `#machine/front` `#machine/cables` `#machine/board` | Four annotated photographs of the Lenovo ThinkCentre M73: rear I/O, front panel, cable routing, motherboard. 22 hotspots total — tap a port/part, see what it is and the examiner question tied to it. |
+| **Exam day** | `#day` | Seven timed blocks in paper order (24+15+30+20+20+20+51 = 180 min). Each block expands to steps, what to show the examiner, and the most likely viva question. Links jump to the relevant machine photo. |
+| **Labs** | `#labs` `#labs/partition?week=8` | 44 revision cards across weeks 5–12. Filter by week, search by title. Each card: aim, tool, minutes, prerequisites, ordered procedure with stop/check warnings, expected evidence, self-check + viva Q, examiner question. Local `reviewed` + `resume` state per card. |
+| **Terminal** | `#terminal` | Virtual file system + three shells (CMD, PowerShell, Bash) with 33 commands and a DiskPart interpreter. Sessions persist. Guided scenarios (partition style, DiskPart, network tests, etc.) inject the exact command sequence. |
+| **CIE-5** | `#project` | The three-part portfolio: Portfolio (10), Mini project (20), Online course (20). Evidence links back to Exam Day / Labs so you copy the right numbers. |
+
+No login. No server. All progress in `localStorage` (exam state at key `sna_exam_state_v1`, terminal sessions at `sna_terminal_sessions_v1`). Data is device-local and does not sync between phones.
+
+---
+
+## Quick start
 
 ```bash
-cd "C:\Users\deep\Downloads\sna-portal gg"
 npm install
-npm run dev
-# Server: http://localhost:3000/
+npm run dev          # http://localhost:3000
+npm run lint         # tsc --noEmit
+npm test             # 96 test cases on Node 22
+npm run build        # -> dist/ (Netlify-ready)
 ```
 
-Type check, test and production build:
+GitHub Actions runs all three on every push to `main` and on PRs (`.github/workflows/ci.yml`).
 
-```bash
-npm run lint     # tsc --noEmit
-npm test         # routing, progress and storage tests (node:test + tsx)
-npm run build    # -> dist/
+---
+
+## Project structure (what's actually in the repo)
+
+```
+src/
+├─ main.tsx                 # App entry, SW registration, ThemeProvider
+├─ App.tsx                  # -> ExamPortal
+├─ exam/
+│  ├─ ExamPortal.tsx        # Hash router (5 tabs), focus mgmt, document.title sync
+│  ├─ ExamShell.tsx         # Top bar (wordmark, exam facts, PWA prompts), bottom nav (5 tabs)
+│  ├─ components/
+│  │  ├─ MachineScreen.tsx  # Photo + hotspots, pinch-zoom/pan, accessibility
+│  │  ├─ ExamDayScreen.tsx  # 7 phases, timed schedule, examiner views
+│  │  ├─ LabsScreen.tsx     # Week filter, search, 44 cards, local reviewed state
+│  │  ├─ ProjectScreen.tsx  # CIE-5 three parts, evidence links
+│  │  ├─ TerminalScreen.tsx # -> components/tabs/TabTerminal.tsx
+│  │  ├─ LabStage.tsx       # Single lab card: procedure, stop/check, self-check, viva
+│  │  ├─ PageHead.tsx, AskBlock.tsx, RichText.tsx, Sheet.tsx, ui.ts
+│  │  └─ lab-stages/        # Disk recovery, evidence, maintenance, monitoring, networking, shared
+│  ├─ types.ts              # ExamState, LabId, LabWeek, MachineViewId, Drill, VivaQuestion…
+│  ├─ store.ts              # localStorage sync, useSyncExternalStore, examActions
+│  ├─ guide.ts              # All exam content: PHASES, Machine parts, Parts, Safety, SafetyRules
+│  ├─ labs.ts               # 44 Lab cards + week membership + ordering
+│  ├─ content.ts            # DRILLS (12), CIE5_PARTS, EXAM_FACTS, LAST_48, PROJECT_EVIDENCE
+│  ├─ routing.ts            # Hash parse/serialize, tab ↔ view mapping
+│  ├─ pwa.ts                # Install prompt, update handler, persistent storage
+│  └─ generated/
+│     └─ drills.ts          # Generated from exam-guide-content/drills.md
+├─ components/
+│  ├─ tabs/TabTerminal.tsx  # Full terminal UI (shells, sessions, scenarios, DiskPart)
+│  ├─ terminal/
+│  │  ├─ TerminalEngine.tsx # VFS, tokenizer, command registry, DiskPart interpreter
+│  │  └─ TerminalComponents.tsx # TerminalScreen, ShellHeader/BottomBar, OfflineIndicator, SCENARIOS
+│  ├─ ErrorBoundary.tsx
+│  ├─ Header.tsx            # (deleted — was portal nav)
+│  └─ BottomNav.tsx         # (deleted — was portal nav)
+├─ context/ThemeContext.tsx # Dark mode + system preference + persist
+├─ index.css                # Tailwind v4 + self-hosted Inter variable fonts + CSS vars
+├─ pwa/manifest.ts          # Web app manifest (name, icons, theme color)
+├─ assets/fonts/            # Inter + Inter Tight, latin + latin-ext, woff2
+└─ vite-env.d.ts
+
+public/
+├─ schematics/              # 4 WebP photographs (m83-rear-io, m83-psu, m83-board, lab-network)
+├─ guide/                   # (empty — reserved)
+├─ screenshots/             # (empty — reserved)
+├─ icon.svg                 # PWA icon source
+├─ favicon.ico
+└─ _redirects               # SPA fallback for Netlify drag-and-drop
+
+tools/
+├─ build-exam-content.mjs   # drills.md + viva.md -> generated/drills.ts (viva.ts not used)
+└─ extract_curriculum.py    # Legacy: reads .docx/.pdf -> curriculum.ts (deleted from src)
+
+tests/                      # 5 files, 96 cases
+├─ exam-routing.test.ts     # 16 — hash parsing, tab/view mapping
+├─ labs.test.ts             # 13 — 44 cards, week membership, source titles
+├─ lab-stages.test.tsx      # 48 — LabStage SSR renders, accessibility, evidence text
+├─ exam-store.test.ts       # 8  — storage migration, sanitation, ID validation
+└─ pwa.test.ts              # 11 — install prompt logic, theme color, native detection
+
+.github/workflows/ci.yml    # Node 22, npm ci, lint, test, build
+netlify.toml                # SPA redirect, cache headers, CSP + security headers
+capacitor.config.ts         # appId: in.setpoly.snaportal, webDir: dist
+android/                    # Capacitor Android project (appId in.setpoly.snaportal)
 ```
 
-GitHub Actions runs all three on every push to `main` and on pull requests
-(`.github/workflows/ci.yml`).
-
----
-
-## Storage Model (read this first)
-
-**This app has no backend server.** There is no Firebase, no Firestore, and no Cloud Run.
-Everything is stored on the device that created it:
-
-| Data | Where it lives | Notes |
-|---|---|---|
-| Announcements, CIE schedule, notes, labs, feedback | `localStorage` | Keys prefixed `sna_` |
-| Course progress (lessons, experiments, last opened lesson) | `localStorage` (`sna_progress_v1`) | Device-scoped; does not follow the student to another phone |
-| Uploaded PDF attachments | **IndexedDB** (`sna_files`) | Keeps large files out of the 5 MB localStorage quota |
-| Terminal sessions, tracker progress, theme | `localStorage` | |
-
-Stored collections use a versioned `{ v: 2, items }` envelope. Older plain arrays are migrated
-on load, and rows that fail runtime validation are dropped instead of reaching the UI.
-
-**The admin panel is a local demo, not a shared server.** Google OAuth still gates who can
-open it, but the sign-in only gates the UI — the session lives in `localStorage` and the ID
-token is decoded but never verified server-side. Anyone who edits `localStorage` in devtools
-can bypass it. Data published in one browser is invisible to students on other devices.
-Production builds show a dismissible demo banner that says so on every screen.
-
-To make this a real multi-user portal you need an actual backend (see *Future Work* below).
-
----
-
-## Deliverables
-
-### Task 1 — CMD Terminal Integration
-- Integrated repo: github.com/Dilipkumarkv/CMD (public)
-- Engine: Virtual File System, tokenizer, command registry, 33 commands across CMD / PowerShell / Bash dialects
-- Includes a DiskPart sub-command interpreter and per-session firewall / local-user state
-- Features: CMD / PowerShell / Bash simulation, CLI scenarios mapped to Weeks 6/8/10/11, session persistence
-
-### Task 2 — Schematic Viewers (Mobile-First)
-- Components: SchematicPane (inline tab), SchematicViewer (full screen, touch/pinch zoom, pan), SchematicIntegration (button in the lab explorer)
-- Data: src/data/schematics.ts — 7 diagrams, 49 hotspots, weeks 1, 2, 3, 4, 8, 10, 11
-- Media: photographs for physical hardware (public/schematics/*.webp), inline SVG where order or structure matters (boot sequence, disk layout, RDP/VPN)
-
-### Task 3 — Mobile-First PWA Optimizations
-- Responsive CSS: viewport scaling (360px–1024px+) in src/index.css
-- Touch targets: global min 44px CSS in index.css
-- Viewport meta: viewport-fit=cover for native screen support
-- Mobile keyboard: visualViewport tracking in terminal
-
-### Task 4 — Netlify Deployment
-- `netlify.toml`: Node 22, `npm run build` → `dist`, SPA fallback, cache rules, security headers including a CSP that allows the Google sign-in script/iframe
-- `public/_redirects`: same SPA fallback for drag-and-drop deploys of `dist/`
-- Build: `npm run build` → `dist/`; the service worker is generated at build time by `vite-plugin-pwa` (Workbox), not checked in as `public/sw.js`
-- See [Deploying to Netlify](#deploying-to-netlify) for the one-time setup and the two environment variables.
-
-### Task 5 — Guided Lab Mode
-- Component: GuidedLab (step navigation, scenario dropdown)
-- Data: src/data/labScenarios.ts (scenarios mapped per experiment)
-- Integration: Added to TabLabs with guided mode toggle, schematic + terminal buttons
-- Features: Step completion tracking, scenario categories (progress is per-session, not persisted)
-
----
-
-## Learning App (Learn / Labs)
-
-The app is no longer a document viewer with a terminal bolted on. Two screens carry the course:
-
-| Route | Component | What it does |
-|---|---|---|
-| `#learn` / `#learn/{week}/{day}` | `src/components/learn/LearnWorkspace.tsx` | Lessons mode: week rail + day chips + `LessonPane`. Falls back to `lastLesson`, then week 1 day 1. |
-| `#learn/assessment` | `src/components/learn/AssessmentBank.tsx` | Assessments mode: CIE model papers, 65 viva Q&A, 61 CIE questions. |
-| `#labs` | `src/components/lab/LabExplorer.tsx` | 58 experiments, search + week filter, procedure checklist, `GuidedLab` launch, completion persisted. |
-
-Lesson tabs: **Basics** (What/Why/How sections), **Overview** (previous unit, connection, syllabus
-coverage, lab session, practical tasks, references), **Notes** (the week's long-form note, with PDF
-download, attachment and links), **Schematic** (photograph or SVG + hotspot list), **Try it** (that week's
-commands, runnable inline against the virtual filesystem), **Q&A** (week's viva + this lesson's CIE
-questions).
-
-The old `#notes` and `#qps` tabs are gone: notes live inside the lesson, papers and question banks
-live in Learn › Assessments. Both old hashes still resolve (`#notes` → `#learn`,
-`#qps` → `#learn/assessment`).
-
-Progress lives in `src/lib/progress.ts`: per-lesson and per-experiment completion plus `lastLesson`,
-read and written through `sna_progress_v1`, with `window` events so every screen updates at once.
-Home shows a resume card from `lastLesson`.
-
-The reasoning behind these choices — including what was cut and why — is in
-[`WORKFLOW.md`](WORKFLOW.md).
+**What is NOT in the repo anymore** (removed in the dead-code sweep):  
+`src/data/curriculum.ts`, `src/components/learn/*`, `src/components/lab/*`, `src/components/schematic/*`, `src/components/assessments/*`, `src/components/tabs/TabHome/Admin/Labs/Links`, `src/lib/storageService.ts`, `src/lib/progress.ts`, `src/lib/googleAuth.ts`, `src/lib/downloadPdf.ts`, `src/lib/fileStore.ts`, `src/lib/routing.ts`, `src/lib/storageSchema.ts`, `src/types.ts`, `src/exam/components/Plan/Drills/VivaScreen.tsx`, `src/exam/generated/viva.ts`, `src/exam/useNow.ts`, and their tests. The old "portal" (13 weeks × 4 lessons, admin panel, Google OAuth, schematic viewers, lab explorer) was a different product that the entry point never reached.
 
 ---
 
 ## Deploying to Netlify
 
-The repo is configured for a Git deploy: `netlify.toml` holds the build command, Node version,
-SPA fallback, cache rules and security headers, so the Netlify UI only needs the repository
-connected.
+**Git CD (recommended)** — push to `main`; Netlify runs `npm run build` and publishes `dist/`.  
+**CLI** — `npx netlify-cli deploy --build --prod` (after `npx netlify-cli login` and `link` once).  
+**Drag & drop** — drop `dist/` on the Netlify dashboard; `_redirects` travels but `netlify.toml` headers do not.
 
-### One-time setup
-
-1. **Import the repo** — Netlify → Add new site → Import an existing project →
-   `Dilipkumarkv/SNA-Portal`. Leave build command and publish directory empty; `netlify.toml`
-   supplies `npm run build` and `dist`.
-2. **Set the environment variables** (Site configuration → Environment variables, scope *Builds*):
-
-   | Variable | Required | Effect |
-   |---|---|---|
-   | `VITE_GOOGLE_CLIENT_ID` | for admin sign-in | Without it the admin sign-in button is not rendered; the student portal is unaffected |
-   | `VITE_ADMIN_EMAILS` | no | Comma-separated allowlist. Empty means any Google account that signs in is treated as admin |
-
-   Both are build-time values baked into the bundle. They are public by design — never put a
-   client secret or a service key in a `VITE_*` variable.
-3. **Allow the site in Google Cloud** — APIs & Services → Credentials → the OAuth 2.0 client →
-   Authorized JavaScript origins → add `https://<your-site>.netlify.app` (and the custom domain,
-   if any). Sign-in fails with an origin error until this is done. Deploy previews have their own
-   origins; add them individually if admin sign-in is needed on previews.
-
-### Deploying
-
-- **Git** — every push to `main` builds and publishes; pull requests get deploy previews.
-- **CLI** — `npx netlify-cli deploy --build --prod` for a one-off publish from this machine
-  (uses the same `netlify.toml`; requires `npx netlify-cli login` and `link` once).
-- **Drag and drop** — drop the contents of `dist/` on the Netlify dashboard. `_redirects` travels
-  with the build so routing still works, but the header rules in `netlify.toml` do not apply to
-  drag-and-drop deploys.
-
-### What the deploy gives you
-
-- SPA routing: any unknown path returns `index.html` (200), so `#learn/3/1` and friends work.
-- Cache policy: hashed `/assets/*` and `/workbox-*.js` for a year, `/schematics/*` for a week,
-  `index.html` revalidated, `sw.js` and the manifest never cached — so a deploy reaches installed
-  PWAs on the next visit.
-- Security: `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, HSTS, a `Permissions-Policy`
-  and a CSP that pins scripts to this origin plus `accounts.google.com`. Anything new loaded from
-  a third-party origin must be added to the CSP in `netlify.toml` or it will be blocked in
-  production while working in `npm run dev`.
-- No third-party asset requests: Inter is self-hosted as two variable-font subsets in
-  `src/assets/fonts/` (declared with `@font-face` in `src/index.css`), and the PWA icons are
-  generated from `public/icon.svg`. Both are hashed into `/assets/` and precached by the service
-  worker, so the portal renders correctly under the CSP and offline.
+### Build output guarantees
+- SPA routing: unknown paths return `index.html` (200), so `#machine/back` works.
+- Cache: hashed `/assets/*` + `/workbox-*.js` → 1 year; `/schematics/*` → 1 week; `index.html` revalidated; `sw.js` + `manifest.webmanifest` never cached.
+- Security headers (from `netlify.toml`): `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, HSTS, `Permissions-Policy`, and a CSP pinning scripts to `self` + `accounts.google.com`. New third-party script origins must be added to the CSP or they'll be blocked in production.
+- Self-hosted fonts: Inter + Inter Tight variable subsets in `src/assets/fonts/` declared via `@font-face` in `src/index.css`. PWA icons generated from `public/icon.svg`. All hashed and precached by the service worker.
 
 ---
 
-## Syllabus Mapping (25CS34I) — All 13 Weeks
+## Content pipeline (exam guide only)
 
-The full curriculum is now extracted from the teacher-authored source documents into
-`src/data/curriculum.ts` by a repeatable pipeline:
+The exam guide's prose lives in two markdown files and is compiled to typed arrays:
 
-```
-python tools/extract_curriculum.py       # requires: python -m pip install pypdf
+```bash
+npm run exam:content   # or npm run prebuild (runs before build)
 ```
 
-| Source document | Extracted into |
-|---|---|
-| `SNA_TeachingPlan.docx` | 13 modules x 4 day-lessons — 52 lessons, 177 sections, 61 CIE questions, 97 practical tasks, 65 viva Q&A |
-| `Laboratory_Manual SNA FV.pdf` | 58 experiments with aim / components / procedure / result |
-| `SNA Syllabus.pdf` | 33 weekly reference links across 12 weeks |
+| Source | Output | Validation |
+|---|---|---|
+| `exam-guide-content/drills.md` | `src/exam/generated/drills.ts` (`DRILLS: Drill[]`) | Must yield **exactly 12 drills**; each drill must have steps, `prove`, `traps` |
+| `exam-guide-content/viva.md`  | Not used — the viva answers are in `src/exam/guide.ts` | — |
 
-Source documents live in `C:\Users\deep\Desktop\SNA\` (override with the `SNA_DOCS_DIR`
-environment variable): `SNA Syllabus.pdf` (CO1–CO5, CIE scheme), `Laboratory_Manual SNA FV.pdf`,
-`SNA_TeachingPlan.docx`, `SYSTEM AND NETWORK ADMINISTRATION.docx` (teacher's reference).
-
-`src/data/curriculum.ts` is **generated — do not edit it by hand.** Edit the extractor and re-run.
-
-The plan for turning this content into a learning app (modelled on learn-esp32) is in
-[`WORKFLOW.md`](WORKFLOW.md).
+The content builder throws if counts don't match, so a missing drill or viva question fails the build.
 
 ---
 
-## Instructions for AI / Developer Agents
+## Key implementation notes
 
-1. Stack: React 19 + TypeScript + Vite + Tailwind v4
-2. State: React useState/useEffect; LabContext class for terminal; localStorage events
-3. Mobile rules: 44px touch targets minimum; viewport-fit=cover; responsive font scaling
-4. Offline: service worker generated by vite-plugin-pwa; localStorage/IndexedDB persistence
-5. Terminal engine: src/components/terminal/TerminalEngine.tsx (VFS, tokenizer, registry)
-6. Schematic data: src/data/schematics.ts (`imageUrl` photograph or `svgPath` + hotspots); new photographs go in `public/schematics/` and must be added to the Workbox `globPatterns` in vite.config.ts if the format changes
-7. File attachments: src/lib/fileStore.ts (IndexedDB). Never store large files in localStorage
-8. New tab: Add import to App.tsx + add to BottomNav + add the id to src/types.ts
-9. Build: `npm run build`; deploy via Git push or `npx netlify-cli deploy --build --prod` (see [Deploying to Netlify](#deploying-to-netlify))
+- **Exam state** (`src/exam/store.ts`): Versioned v1 envelope, `useSyncExternalStore` for React 18 concurrent safety, `storage` event listener so tabs stay in sync, graceful quota handling.
+- **Terminal engine** (`src/components/terminal/TerminalEngine.tsx`): VirtualFileSystem with directories/files/permissions, command tokenizer, 33 built-in commands (CMD/PS/Bash), DiskPart sub-interpreter (`list disk`, `select disk`, `create partition`, `format`, `assign`), session persistence (`saveLabState`/`loadLabState`).
+- **Accessibility**: skip link in `ExamShell`, focus moved to `<h1>` on route change, 126 `aria-*` attributes, 44 px touch targets, `viewport-fit=cover`, safe-area insets.
+- **PWA**: `vite-plugin-pwa` with Workbox; install prompt on Android, iOS "Add to Home Screen" banner; `prompt` registration; `globPatterns` includes `webp` for the schematic photos.
+- **Capacitor**: `appId: in.setpoly.snaportal`, `backgroundColor: #f2eee3`. Android project in `android/` builds with `npx cap sync && npx cap open android` (requires Android SDK, not in this repo).
+- **Tests**: Node 22 `node:test` + `tsx`. The test runner on this device crashes `tsx`/`esbuild` (binary spawn issue), so CI is the authoritative run — it passes 96 cases.
 
 ---
 
-## Known Gaps
+## Known gaps (honest)
 
-- Admin publishing is a local demo: uploads and notices live in this browser only, so they never
-  reach another student's device
-- Student portal is open — there is no per-student login or progress sync between devices; a
-  student's ticks stay in that browser
-- `TabNotes` is gone; the 13 hand-written notes now render in the lesson's Notes tab and still
-  partly overlap the generated lessons. `TabLabs` no longer uses `staticLabs.ts` — it reads
-  `EXPERIMENTS`
-- Schematics cover weeks 1, 2, 3, 4, 8, 10 and 11; weeks 5, 6, 7, 9, 12 and 13 show an explicit
-  "no diagram for this week" state. The photographs are AI-generated renderings of the M83, not
-  photos taken in the lab
-- The model papers in Learn › Assessments are hand-transcribed; the source CIE PDFs are not bundled
-- Offline reload has not been verified with the network actually off
-- Bundle is ~886 kB (278 kB gzip). jsPDF and html2canvas are now lazy chunks (~590 kB total)
-  loaded on the first PDF export; the remaining size is curriculum data and the terminal engine
+- No backend → progress does not follow the student to another device.
+- No per-student login → anyone with the URL sees the same exam guide.
+- The admin panel and Google OAuth code were deleted; if you need shared publishing, add a backend (see `WORKFLOW.md`).
+- `src/pwa/manifest.ts` and `src/vite-env.d.ts` are technically unreachable from the import graph (used by Vite/Capacitor config) — they stay.
+- `viva.ts` was generated but never wired into a live screen; `drills.ts` feeds `content.ts` → `ProjectScreen` and the LAST_48 checklist.
+- Offline reload not tested with network actually off.
+- Schematic photographs are AI-generated WebP renderings of the M83, not photos taken in the lab.
+- Only weeks 5–12 have lab cards (44 total); the syllabus has 58 experiments across 13 weeks. Weeks 1–4 and 13 are uncovered.
 
 ---
 
-## Future Work
+## Future work
 
-- Real backend (Firestore or Postgres + object storage) to make the admin panel shared and let
-  progress follow a student between devices
-- Server-verified admin sessions with token expiry
-- Replace the generated schematic photographs with real photos of the lab machines
-- A progress-reset control in the UI (`resetProgress()` exists in `src/lib/progress.ts`)
+- Real backend (Firestore or Postgres + object storage) to share admin uploads and sync progress.
+- Server-verified admin sessions with token expiry.
+- Replace AI-generated schematic photographs with real lab photos.
+- Add a progress-reset control in the UI (`reset()` exists in `store.ts`).
+- Extend lab coverage to weeks 1–4 and 13 if the syllabus requires it.

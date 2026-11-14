@@ -1,96 +1,183 @@
-# Project Report: System & Network Administration (SNA) Portal
+# Project Report: SNA Exam Guide (25CS34I)
 
 ## 1. Executive Summary
-The System & Network Administration (SNA) Portal is a web-based educational platform for S.E.T Polytechnic. It acts as a single digital hub for course materials, laboratory tasks, academic schedules, and progress tracking for the 25CS34I curriculum. The application has a dual-role structure: an open-access student portal and an admin portal gated behind Google OAuth.
 
-The current build is a **client-only application**. It runs entirely in the browser with no server component, which makes it inexpensive to host and fully usable offline — but it also means data is per-device rather than shared.
+The **SNA Exam Guide** is a client-only Progressive Web App for the System & Network Administration practical exam (course 25CS34I, S.E.T Polytechnic). It replaces the former "SNA Portal" — a 13-week course portal with an admin panel — with a focused, mobile-first exam cram tool that runs entirely in the browser and on Android via Capacitor.
 
-## 2. Project Objectives
-- **Centralized Content Delivery:** One place to reach lecture notes, lab manuals, question papers (QPs), and reference links mapped by academic week.
-- **Academic Tracking:** Let students mark completed modules and labs to track progress through the 13-week course.
-- **Administrative Control:** Let an instructor post announcements, manage the CIE schedule, and attach course documents.
-- **Practical CLI Skills:** Provide a safe, sandboxed terminal for practising CMD/PowerShell/Bash commands without affecting the student's machine.
+- **Deploy target:** Netlify (SPA) + PWA offline-first + Capacitor Android wrapper  
+- **Backend:** None. All state is `localStorage` / `IndexedDB` on the device.  
+- **Auth:** None. The student portal is open; the deleted admin panel used Google OAuth as a UI gate only.  
+- **Tested:** GitHub Actions on Node 22 — `npm ci`, `tsc --noEmit`, `node:test` (96 cases), `vite build` all pass.
 
-## 3. System Architecture & Tech Stack
+---
 
-**Frontend:**
-- **Framework:** React 19 with Vite 6 (SPA, hash-based tab routing)
-- **Language:** TypeScript 5.8
-- **Styling:** Tailwind CSS v4 with dark mode
-- **Icons:** Lucide React
-- **Animation / PDF:** Motion, jsPDF + html2canvas
+## 2. Product Scope
 
-**Offline & Packaging:**
-- **PWA:** `vite-plugin-pwa` with Workbox precaching; installable on Android/iOS
-- **Native:** Capacitor 8 wrapper for Android
+### Delivered screens (5 hash-routed tabs)
 
-**Storage (client-side, no backend):**
-| Concern | Mechanism |
+| Tab | Hash | Purpose |
+|---|---|---|
+| Machine | `#machine/back`, `#machine/front`, `#machine/cables`, `#machine/board` | Four annotated photographs of the Lenovo ThinkCentre M73 lab PC. 22 interactive hotspots; tap a port/part → see name, specs, and the examiner question tied to it. Pinch-zoom, pan, full-screen modal. |
+| Exam Day | `#day` | Seven timed blocks in paper order (24 + 15 + 30 + 20 + 20 + 20 + 51 = 180 min). Each block: ordered steps, "show the examiner" checklist, most-likely viva question, links to the relevant Machine photo. |
+| Labs | `#labs`, `#labs/<lab-id>?week=<n>` | 44 revision cards for weeks 5–12. Filter by week, search by title. Card fields: aim, tool, minutes, prerequisites, ordered procedure with stop/check warnings, expected evidence, self-check Q&A, examiner question. Local `reviewed` + `lastOpened` state per card. |
+| Terminal | `#terminal` | Virtual file system + three shells (CMD, PowerShell, Bash) with 33 commands and a DiskPart interpreter. Sessions persist across reloads. Guided scenarios inject the exact command sequence. |
+| CIE-5 | `#project` | Three-part portfolio: Portfolio (10 marks), Mini project (20), Online course (20). Evidence links back to Exam Day / Labs so the student copies the right numbers. |
+
+### Content assets
+
+- **12 timed drills** (`exam-guide-content/drills.md` → `generated/drills.ts`) — categories: Hardware, OS & drivers, Disks & accounts, Repair, Network. Each drill: minutes, phase, viva references, ordered steps, commands, prove, traps, note.
+- **30 viva answers** embedded in `src/exam/guide.ts` (the `viva.md` source exists but is not compiled into the live app).
+- **4 WebP photographs** in `public/schematics/`: M83 rear I/O, PSU, H81 board, lab network diagram. 22 hotspots total.
+- **6 machine parts** with specs (`Part[]` in `guide.ts`): Motherboard (H81/LGA1150), RAM (2×4 GB DDR3-1600), SSD (240 GB), HDD (500 GB), PSU (450 W ATX), CPU (i5 4th gen).
+
+### What the syllabus covers vs. what the app covers
+
+| Syllabus area | App coverage |
 |---|---|
-| Content records (announcements, CIE, notes, labs, feedback) | `localStorage` via `src/lib/storageService.ts` |
-| Course progress (lessons, experiments, last opened lesson) | `localStorage` (`sna_progress_v1`) via `src/lib/progress.ts` |
-| Uploaded PDF attachments | IndexedDB via `src/lib/fileStore.ts` |
-| Terminal sessions, tracker progress, theme | `localStorage` |
+| Weeks 1–4 (hardware fundamentals, SMPS, boot, BIOS) | Machine photos + Exam Day phases 1–3 touch this; no dedicated lab cards |
+| Weeks 5–12 (install media, CLI, repair, disks, networking, VMs, e-waste) | 44 lab cards across 8 weeks; Exam Day phases 1–7 + Terminal scenarios |
+| Week 13 | Not covered |
+| 58 experiments in lab manual | 44 revision cards (weeks 5–12 only) |
 
-**Authentication:**
-- **Admins:** Google OAuth via `@react-oauth/google`. The ID token is decoded client-side to read the profile; the admin session is persisted in `localStorage` and gated by an optional `VITE_ADMIN_EMAILS` allowlist.
-- **Students:** No login. The student portal is open to everyone, which keeps the app usable on shared or low-end devices.
+---
 
-## 4. Key Features & Modules
+## 3. Architecture & Tech Stack
 
-### 4.1 Student Portal
-- **Learn workspace:** 13 weeks × 4 day-lessons = 52 lessons. Week rail, day chips, and a six-tab lesson pane (Basics, Overview, Notes, Schematic, Try it, Q&A). Per-lesson completion and `lastLesson` are persisted in `sna_progress_v1`.
-- **Assessments (inside Learn):** CIE-1…4 model papers, the full 65-question viva bank and the 61-question CIE bank.
-- **Dashboard/Home:** Announcements, CIE schedule, and a resume card pointing at the last lesson opened.
-- **Notes:** The 13 hand-written notes render in each lesson's Notes tab, exportable as PDF via html2canvas, alongside any admin-uploaded note for that week.
-- **Laboratory Explorer:** All 58 experiments from the manual with search, week filter, aim/components/procedure/result, a per-experiment checklist, guided practice, and admin-attached documents.
-- **Progress Tracker:** Weekly checklist with self-assessment, persisted across sessions.
-- **Reference Links:** 33 curated external references per week, shown in the lesson Overview tab and in the Links library.
-- **Virtual Terminal Lab:** A Virtual File System with 33 commands across CMD/PowerShell/Bash dialects (including a DiskPart sub-command interpreter), session persistence, and guided scenario walkthroughs.
-- **Schematic Viewers:** Seven annotated diagrams of the lab machine (Lenovo ThinkCentre M83: rear I/O and cables, PSU, H81 board, lab room, boot sequence, disk layout, RDP/VPN) with 49 hotspots, pinch-zoom and pan. Physical hardware uses photographs; sequences and structures use SVG. Shown inline in the lesson's Schematic tab, expandable full-screen, and reachable from each experiment's detail panel.
+### Frontend
 
-### 4.2 Administrator Portal
-- **Dashboard Analytics:** Per-week completion breakdown with filterable CIE grouping (sample data).
-- **Content Management:** Upload PDFs for notes and lab manuals; files are stored outside `localStorage` to avoid the quota limit.
-- **Announcements:** Broadcast academic notices with an urgent flag.
-- **Schedule Management:** Publish CIE entries with badges and progress percentages.
-- **Local Demo Notice:** The panel is explicitly labelled as browser-local, so no one mistakes it for a shared server.
+| Layer | Choice | Version |
+|---|---|---|
+| Framework | React | 19 |
+| Build | Vite | 6 |
+| Language | TypeScript | 5.8 |
+| Styling | Tailwind CSS | 4 (v4, native CSS vars) |
+| Routing | Hash-based (`window.location.hash`) | Custom, 5 tabs |
+| State | `useState` / `useSyncExternalStore` + `localStorage` | No external store |
+| Icons | Lucide React | 0.546 |
+| PDF (lazy) | jsPDF + html2canvas | Dynamic `import()` on export |
 
-## 5. Security Posture (honest assessment)
+### Offline & Packaging
 
-This is the most important caveat in the project.
+| Feature | Implementation |
+|---|---|
+| PWA | `vite-plugin-pwa` + Workbox; `registerType: 'prompt'`; precaches `js,css,html,ico,png,svg,webp,woff2` |
+| Service worker | Generated; `sw.js` + `workbox-*.js` immutable cached; `index.html` revalidated |
+| Installability | Android: `beforeinstallprompt`; iOS: "Add to Home Screen" banner via `PwaPrompts` |
+| Native wrapper | Capacitor 8; `appId: in.setpoly.snaportal`; `android/` project ready for `npx cap sync` |
+| Fonts | Self-hosted Inter + Inter Tight variable subsets (latin + latin-ext), `@font-face` in `index.css` |
 
-- **The admin guard is client-side only.** `isAdminAuthenticated()` reads a JSON profile from `localStorage` and compares the email against an allowlist. There is no server, so there is no session to invalidate and no token signature verification. The Google ID token is decoded for display, not verified. A user with devtools access can set `sna_admin_user_v2` and gain admin UI access.
-- **Data isolation is by device.** Content published in the admin panel is stored in the browser that published it. It does not reach other students.
-- **Default allowlist is open.** If `VITE_ADMIN_EMAILS` is unset, any Google account that signs in is treated as an admin.
-- **Input sanitisation is applied where it matters.** Note and lab content is rendered through DOMPurify. The schematic SVG is static first-party data, and the photographs are static assets from `public/schematics/`.
-- **Transport and hosting hygiene are in place.** Netlify serves the SPA with CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options: DENY`, and `frame-ancestors 'none'`.
+### Storage (device-local only)
 
-To make this production-grade for a real cohort, the admin surface needs a backend with server-verified sessions, and student-facing content needs shared storage.
+| Key | Contents | Mechanism |
+|---|---|---|
+| `sna_exam_state_v1` | Exam date, completed drills/steps, viva marks, last-48 checklist, project checklist, mock timer, quiz seen, last lab, reviewed labs | `localStorage` + `useSyncExternalStore` |
+| `sna_terminal_sessions_v1` | All terminal sessions (entries, history, VFS, shell mode) | `localStorage` |
+| `sna_files` | Admin PDF uploads (deleted with admin panel) | IndexedDB (`fileStore.ts`) — code remains but unused |
 
-## 6. Current Coverage
+**No backend, no sync.** Data never leaves the browser that created it.
 
-| Asset | Source | Extracted | Rendered in the UI | Gap |
-|---|---|---|---|---|
-| Theory lessons | 13 weeks × 4 teaching days = 52 | 52 | 52 (`#learn`) | None |
-| Lab experiments | 58 (Laboratory Manual FV) | 58 | 58 (`#labs`) | None |
-| CIE model question papers | Syllabus (CIE-1, CIE-2, SEE) | Partial | Partial (`#learn/assessment`) | Hand-transcribed cards; source PDFs not bundled |
-| Weekly reference links | Syllabus (33 URLs) | 33 | 33 (lesson Overview tab, `#links`) | None |
-| Viva questions and answers | Teaching Plan | 65 | 65 (`#learn/assessment`) | None |
-| Practical tasks | Teaching Plan | 97 | 97 (Overview tab, lab explorer) | None |
-| Lesson CIE questions | Teaching Plan | 61 | 61 (`#learn/assessment`) | None |
-| Long-form weekly notes | Teacher-authored | 13 | 13 (lesson Notes tab) | Overlaps the generated lessons |
+---
 
-All curriculum content is extracted into `src/data/curriculum.ts` by
-`tools/extract_curriculum.py`, and every extracted item now has a screen. The build record,
-including what was cut from the original plan and why, is in [`WORKFLOW.md`](WORKFLOW.md).
+## 4. Security Posture (honest)
 
-## 7. Future Enhancements
-- Move content and admin sessions to a real backend (Firestore, or Postgres + object storage)
-- Sync per-student progress across devices (today it is browser-local)
-- Replace the generated schematic photographs with photos taken of the actual lab machines
-- Formative assessment: quizzes and self-check questions per lesson
-- Offline quiz mode with local result sync
+| Control | Status | Notes |
+|---|---|---|
+| CSP | ✅ Enforced | `default-src 'self'`, scripts `self` + `accounts.google.com`, frames `accounts.google.com`, workers `self` + `blob:` |
+| HSTS | ✅ Enforced | `max-age=31536000; includeSubDomains` via `netlify.toml` |
+| Frame protection | ✅ | `X-Frame-Options: DENY`, `frame-ancestors 'none'` |
+| MIME sniffing | ✅ | `X-Content-Type-Options: nosniff` |
+| Referrer | ✅ | `strict-origin-when-cross-origin` |
+| Permissions | ✅ | `camera=(), microphone=(), geolocation=()` |
+| Auth | ❌ None | Student portal open; deleted admin panel used client-side ID token decode only — no server verification |
+| Data isolation | ⚠️ Per-device | `localStorage` / IndexedDB scoped to origin; no cross-device sync |
+| Offline integrity | ⚠️ Untested | Service worker precaches assets; no verification of offline reload with network disabled |
 
-## 8. Conclusion
-The SNA Portal delivers a credible, offline-capable learning companion for 25CS34I. Its strongest assets are the 52-lesson Learn workspace with runnable per-week commands, the virtual terminal, and the interactive schematics; all 58 experiments, 65 viva questions and 61 CIE questions are now reachable in the app rather than buried in source documents. As a local-first prototype it is complete and deployable. Its path to serving an entire cohort depends on moving content storage and admin authentication off the client — the single highest-impact next step.
+**To make this production-grade for a real cohort:** add a backend (Firestore / Postgres + object storage) with server-verified sessions and shared content.
+
+---
+
+## 5. Testing
+
+| Suite | Framework | Cases | What it covers |
+|---|---|---|---|
+| `exam-routing.test.ts` | Node `test` + `tsx` | 16 | Hash parsing, tab/view mapping, week filter validation |
+| `labs.test.ts` | Node `test` + `tsx` | 13 | 44 cards exist, week membership matches independent ledger, source titles match lab manual |
+| `lab-stages.test.tsx` | Node `test` + `tsx` + `react-dom/server` | 48 | `LabStage` SSR renders, evidence text present, accessibility attributes, no form inputs |
+| `exam-store.test.ts` | Node `test` + `tsx` | 8 | v1 migration, sanitation discards unknown/duplicate IDs, top-level await |
+| `pwa.test.ts` | Node `test` + `tsx` | 11 | Install prompt logic, theme color, native detection, persistent storage |
+
+**Total:** 96 cases, 113 assertions.  
+CI runs on Node 22 (`actions/setup-node@v4` with `cache: npm`). The `tsx`/`esbuild` binary crashes on this Android device, so the on-device test run uses a CommonJS build workaround — CI is the authoritative pass.
+
+Typecheck: `tsc --noEmit` (strict: false in `tsconfig.json`) — 0 diagnostics.
+
+---
+
+## 6. Build & Deploy
+
+```bash
+npm run build   # vite build (includes prebuild -> exam:content)
+```
+
+Outputs to `dist/`:
+- Hashed assets (`assets/index-<hash>.js`, `assets/index-<hash>.css`)
+- `index.html` (SPA shell)
+- `sw.js`, `workbox-<hash>.js`, `manifest.webmanifest`
+- Copied `public/schematics/*.webp`, `public/guide/*`, `public/screenshots/*`
+
+Netlify config (`netlify.toml`):
+- `[[redirects]]` — SPA fallback `/* → /index.html` (200)
+- `[[headers]]` — cache rules + security headers (CSP, HSTS, etc.)
+- `command = "npm run build"`, `publish = "dist"`, `NODE_VERSION = "22"`
+
+Capacitor Android:
+- `npx cap sync` copies `dist/` to `android/app/src/main/assets/public`
+- `android/app/build.gradle` — `minSdkVersion` / `targetSdkVersion` from root `variables.gradle`
+- Not built in CI; requires Android SDK locally.
+
+---
+
+## 7. Content Pipeline
+
+Only the exam guide has a repeatable content build:
+
+```bash
+npm run exam:content
+# reads exam-guide-content/drills.md -> src/exam/generated/drills.ts (12 Drill objects)
+# throws if not exactly 12 drills, or if any drill lacks steps/prove/traps
+```
+
+The legacy curriculum extractor (`tools/extract_curriculum.py`) reads `.docx`/`.pdf` sources from a local Windows path (`C:\Users\deep\Desktop\SNA\`) and emitted `src/data/curriculum.ts` — that file and the extractor are now orphaned in the repo (the portal they fed was deleted). They are retained for reference only.
+
+---
+
+## 8. Known Gaps
+
+| Gap | Impact | Fix |
+|---|---|---|
+| No backend | Progress and uploads don't cross devices | Add Firestore / Postgres + object storage |
+| No student login | Cannot attribute progress to a person | Add auth + user profile |
+| Admin panel deleted | No way to push notices/lab PDFs to students | Rebuild admin on top of a real backend |
+| `viva.ts` generated but unused | 30 viva answers sit in `guide.ts` instead | Wire into a screen or delete the generator |
+| Weeks 1–4, 13 labs uncovered | 14 of 58 experiments have no revision card | Add cards if syllabus requires |
+| Schematic photos are AI renders | Not authentic lab documentation | Replace with real photos |
+| Offline reload untested | PWA claim not verified | Test with network disabled |
+| Bundle size unknown on CI | README claim "~886 kB / 278 kB gzip" unverified | Add `vite-plugin-visualizer` or CI artifact upload |
+
+---
+
+## 9. Future Work
+
+1. **Backend** — Firestore (simplest, already client-side) or Postgres + S3. Moves admin uploads, CIE schedule, and student progress off-device.
+2. **Auth** — Firebase Auth or custom JWT. Server-verified sessions; student accounts; progress sync.
+3. **Real photos** — Replace the four WebP renders with photos of the actual M73 lab machines.
+4. **Progress reset** — Expose `examActions.reset()` in the UI (exists in `store.ts`).
+5. **Lab coverage** — Extend to weeks 1–4 and 13 if the teaching plan requires it.
+6. **Bundle audit** — Add `vite-plugin-visualizer` to CI; track gzip size over time.
+7. **E2E tests** — Playwright for critical paths (Exam Day flow, Terminal scenario, Lab card review).
+
+---
+
+## 10. Conclusion
+
+The SNA Exam Guide is a focused, offline-capable PWA that does one thing well: it puts the M73 lab PC, the 180-minute exam sequence, 44 lab revision cards, a virtual terminal, and the CIE-5 portfolio requirements into a student's phone. It has no backend, no login, and no shared state — which keeps it simple, free to host, and fully usable offline. The tradeoff is that progress is device-local and the admin surface is gone. If the course needs shared publishing and cross-device progress, the next step is a backend, not more frontend.
